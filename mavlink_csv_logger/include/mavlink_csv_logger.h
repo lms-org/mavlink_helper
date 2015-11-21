@@ -42,7 +42,7 @@ protected:
     //! Module config
     const lms::ModuleConfig* config;
     //! In data channel (messages received)
-    const std::vector<mavlink_message_t>* mavlinkChannel;
+    lms::ReadDataChannel< std::vector<mavlink_message_t> > mavlinkChannel;
     
     //! Logfile prefix
     std::string prefix;

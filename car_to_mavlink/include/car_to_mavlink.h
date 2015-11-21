@@ -22,9 +22,9 @@ protected:
     
 protected:
     // Datachannels
-    const sensor_utils::Car* car;
-    const std::vector<mavlink_message_t>* inChannel;
-    std::vector<mavlink_message_t>* outChannel;
+    lms::ReadDataChannel<sensor_utils::Car> car;
+    lms::ReadDataChannel<std::vector<mavlink_message_t> > inChannel;
+    lms::WriteDataChannel<std::vector<mavlink_message_t> > outChannel;
     
     // RC state
     uint8_t lastRcState;
