@@ -33,11 +33,22 @@ void MavlinkConfig::requestConfigCount()
 
 void MavlinkConfig::requestConfig(size_t config_id)
 {
+    mavlink_config_request_t request;
+    request.config_id = config_id;
 
+    mavlink_message_t msg;
+    mavlink_msg_config_request_encode(systemID, 0, &msg, &request);
+    outChannel->push_back(msg);
 }
 
 void MavlinkConfig::requestParam(size_t config_id, size_t param_id)
 {
+    mavlink_config_request_params_t request;
+    request.config_id = config_id;
+    request.param_id = param_id;
 
+    mavlink_message_t msg;
+    mavlink_msg_config_request_params_encode(systemID, 0, &msg, &request);
+    outChannel->push_back(msg);
 }
 
