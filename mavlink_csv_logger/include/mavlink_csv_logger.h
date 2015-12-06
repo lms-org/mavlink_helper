@@ -10,6 +10,7 @@
 #include <unordered_map>
 
 #include <mavlink/CC2016/mavlink.h>
+#include <mavlink/lms/data.h>
 
 class MavlinkCsvLogger : public lms::Module {
 public:
@@ -42,7 +43,7 @@ protected:
     //! Module config
     const lms::ModuleConfig* config;
     //! In data channel (messages received)
-    lms::ReadDataChannel< std::vector<mavlink_message_t> > mavlinkChannel;
+    lms::ReadDataChannel<Mavlink::Data> mavlinkChannel;
     
     //! Logfile prefix
     std::string prefix;

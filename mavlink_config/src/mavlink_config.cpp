@@ -2,8 +2,8 @@
 
 bool MavlinkConfig::initialize() {
     // Setup datachannels
-    inChannel = datamanager()->readChannel< std::vector<mavlink_message_t> >(this, "MAVLINK_IN");
-    outChannel = datamanager()->writeChannel< std::vector<mavlink_message_t> >(this, "MAVLINK_OUT");
+    inChannel = readChannel<Mavlink::Data>("MAVLINK_IN");
+    outChannel = writeChannel<Mavlink::Data>("MAVLINK_OUT");
 
     // Read system id
     systemID = config().get<size_t>("system_id");
@@ -28,7 +28,7 @@ void MavlinkConfig::requestConfigCount()
 
     mavlink_message_t msg;
     mavlink_msg_config_request_count_encode(systemID, 0, &msg, &request);
-    outChannel->push_back(msg);
+    outChannel->add(msg);
 }
 
 void MavlinkConfig::requestConfig(size_t config_id)
@@ -38,7 +38,7 @@ void MavlinkConfig::requestConfig(size_t config_id)
 
     mavlink_message_t msg;
     mavlink_msg_config_request_encode(systemID, 0, &msg, &request);
-    outChannel->push_back(msg);
+    outChannel->add(msg);
 }
 
 void MavlinkConfig::requestParam(size_t config_id, size_t param_id)
@@ -49,6 +49,6 @@ void MavlinkConfig::requestParam(size_t config_id, size_t param_id)
 
     mavlink_message_t msg;
     mavlink_msg_config_request_params_encode(systemID, 0, &msg, &request);
-    outChannel->push_back(msg);
+    outChannel->add(msg);
 }
 

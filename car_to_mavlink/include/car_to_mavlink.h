@@ -9,6 +9,7 @@
 #include <vector>
 
 #include <mavlink/CC2016/mavlink.h>
+#include <mavlink/lms/data.h>
 
 class CarToMavlink : public lms::Module {
 public:
@@ -23,8 +24,8 @@ protected:
 protected:
     // Datachannels
     lms::ReadDataChannel<sensor_utils::Car> car;
-    lms::ReadDataChannel<std::vector<mavlink_message_t> > inChannel;
-    lms::WriteDataChannel<std::vector<mavlink_message_t> > outChannel;
+    lms::ReadDataChannel<Mavlink::Data> inChannel;
+    lms::WriteDataChannel<Mavlink::Data> outChannel;
     
     // RC state
     uint8_t lastRcState;

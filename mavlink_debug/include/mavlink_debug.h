@@ -6,9 +6,11 @@
 #include <lms/extra/time.h>
 
 #include <sstream>
-#include <mavlink/CC2016/mavlink.h>
 #include <map>
 #include <tuple>
+
+#include <mavlink/CC2016/mavlink.h>
+#include <mavlink/lms/data.h>
 
 class umavlinkudebug : public lms::Module {
 public:
@@ -24,7 +26,7 @@ protected:
     //! Module config
     const lms::ModuleConfig* config;
     //! In data channel (messages received)
-    lms::ReadDataChannel< std::vector<mavlink_message_t> > mavlinkChannel;
+    lms::ReadDataChannel<Mavlink::Data> mavlinkChannel;
     //! Message counter
     std::map<std::tuple<uint8_t, uint8_t, uint8_t>, ssize_t> messageCounter;
     //! Timestamp

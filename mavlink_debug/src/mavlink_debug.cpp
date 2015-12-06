@@ -10,7 +10,7 @@ bool umavlinkudebug::initialize() {
     
     // Setup datachannels
     auto channel = config->get<std::string>("channel");
-    mavlinkChannel = datamanager()->readChannel< std::vector<mavlink_message_t> >(this, channel);
+    mavlinkChannel = readChannel<Mavlink::Data>(channel);
     
     // Reset timestamp
     lastTimestamp = lms::extra::PrecisionTime::now();

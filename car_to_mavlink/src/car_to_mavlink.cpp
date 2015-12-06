@@ -3,9 +3,9 @@
 bool CarToMavlink::initialize() {
     
     // Datachannels
-    car = datamanager()->readChannel<sensor_utils::Car>(this,"CAR");
-    inChannel = datamanager()->readChannel< std::vector<mavlink_message_t> >(this, "MAVLINK_IN");
-    outChannel = datamanager()->writeChannel< std::vector<mavlink_message_t> >(this, "MAVLINK_OUT");
+    car = readChannel<sensor_utils::Car>("CAR");
+    inChannel = readChannel<Mavlink::Data>("MAVLINK_IN");
+    outChannel = writeChannel<Mavlink::Data>("MAVLINK_OUT");
 
     lastRcState = false;
     return true;
@@ -76,5 +76,5 @@ void CarToMavlink::setControlCommands()
     mavlink_message_t msg;
     // TODO: turn signal indicators
     mavlink_msg_control_command_pack(0, 0, &msg, car->targetSpeed(), car->steeringFront(), car->steeringRear(), 0, 0);
-    outChannel->push_back(msg);
+    outChannel->add(msg);
 }

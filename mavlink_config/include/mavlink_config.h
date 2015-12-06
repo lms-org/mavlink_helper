@@ -5,7 +5,9 @@
 #include <lms/module.h>
 
 #include <vector>
+
 #include <mavlink/CC2016/mavlink.h>
+#include <mavlink/lms/data.h>
 
 /**
  * @brief LMS module mavlink_config
@@ -23,9 +25,9 @@ protected:
 
 protected:
     //! Out data channel
-    lms::WriteDataChannel< std::vector<mavlink_message_t> > outChannel;
+    lms::WriteDataChannel<Mavlink::Data> outChannel;
     //! In data channel
-    lms::ReadDataChannel< std::vector<mavlink_message_t> > inChannel;
+    lms::ReadDataChannel<Mavlink::Data> inChannel;
 
     //! Mavlink System ID
     uint8_t systemID;
