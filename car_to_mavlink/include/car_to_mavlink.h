@@ -18,8 +18,9 @@ public:
     bool cycle();
     
 protected:
-    void checkHeartbeat();
+    void parseHeartBeat(const mavlink_message_t &msg);
     void setControlCommands();
+    void parseIncomingMessages();
     
 protected:
     // Datachannels

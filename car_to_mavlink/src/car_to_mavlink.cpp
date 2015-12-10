@@ -1,4 +1,5 @@
 #include "car_to_mavlink.h"
+#include "phoenix_CC2016_service/phoenix_CC2016_service.h"
 
 bool CarToMavlink::initialize() {
     
@@ -17,62 +18,50 @@ bool CarToMavlink::deinitialize() {
 
 bool CarToMavlink::cycle() {
     
-    checkHeartbeat();
+    parseIncomingMessages();
     setControlCommands();
     
     return true;
 }
 
+void CarToMavlink::parseIncomingMessages(){
 
-void CarToMavlink::checkHeartbeat()
-{
-    // Search inChannel for HEARTBEAT message
-    for( const auto& msg : *inChannel )
-    {
-        if( msg.msgid == MAVLINK_MSG_ID_HEARTBEAT )
-        {
-            // HEARTBEAT found
-            
-            // check rc state
-            auto currentRcState = mavlink_msg_heartbeat_get_remote_control(&msg);
-            if( currentRcState != lastRcState )
-            {
-                if( currentRcState == REMOTE_CONTROL_STATUS_DISCONNECTED )
-                {
-                    // Lost connection to remote control
-                    logger.error("cycle") << "Remote Control connection has been lost!";
-                } else if( currentRcState == REMOTE_CONTROL_STATUS_CONNECTED )
-                {
-                    if( lastRcState == REMOTE_CONTROL_STATUS_DISCONNECTED )
-                    {
-                        // Re-established connection
-                        logger.error("cycle") << "Remote Control connection has been re-established!";
-                    } else if( lastRcState == REMOTE_CONTROL_STATUS_ACTIVE )
-                    {
-                        // Switched off manual mode
-                        messaging()->send("RC_STATE_CHANGED", std::to_string(0));
-                        logger.warn("cycle") << "Remote Control has been switched to AUTONOMOUS mode!";
-                    }
-                } else
-                {
-                    // Switched into manual mode
-                    messaging()->send("RC_STATE_CHANGED", std::to_string(1));
-                    logger.warn("cycle") << "Remote Control has been switched to MANUAL mode!";
-                }
-                
-                // Update rc state
-                lastRcState = currentRcState;
-            }
-            
-            // check drive mode
-            // auto currentDriveMode = mavlink_msg_heartbeat_get_drive_mode(&msg);
-            // TODO!
+    for( const auto& msg : *inChannel ){
+        if(msg.msgid == MAVLINK_MSG_ID_HEARTBEAT){
+            parseHeartBeat(msg);
         }
     }
 }
 
-void CarToMavlink::setControlCommands()
+
+void CarToMavlink::parseHeartBeat(const mavlink_message_t &msg)
 {
+    // Search inChannel for HEARTBEAT message
+        if( msg.msgid == MAVLINK_MSG_ID_HEARTBEAT )
+        {
+            // HEARTBEAT found
+            lms::ServiceHandle<phoenix_CC2016_service::Phoenix_CC2016Service> service = getService<phoenix_CC2016_service::Phoenix_CC2016Service>("PHOENIX_SERVICE");
+            
+            //get rc state
+            int currentRcState = mavlink_msg_heartbeat_get_remote_control(&msg);
+            phoenix_CC2016_service::RemoteControlState rcState = phoenix_CC2016_service::RemoteControlState::IDLE;
+
+            if( currentRcState == REMOTE_CONTROL_STATUS_DISCONNECTED ){
+                rcState =phoenix_CC2016_service::RemoteControlState::DISCONNECTED;
+            } else if( currentRcState == REMOTE_CONTROL_STATUS_CONNECTED ){
+                rcState =phoenix_CC2016_service::RemoteControlState::IDLE;
+            }else if(currentRcState == REMOTE_CONTROL_STATUS_ACTIVE){
+                rcState =phoenix_CC2016_service::RemoteControlState::ACTIVE;
+            }else{
+                logger.error("parseHeartBeat")<<"invalid rc-state: "<<currentRcState;
+            }
+            //TODO get values
+            service->update(rcState,phoenix_CC2016_service::CCDriveMode::IDLE,8);
+        }
+
+}
+
+void CarToMavlink::setControlCommands(){
     mavlink_message_t msg;
     // TODO: turn signal indicators
     mavlink_msg_control_command_pack(0, 0, &msg, car->targetSpeed(), car->steeringFront(), car->steeringRear(), 0, 0);
