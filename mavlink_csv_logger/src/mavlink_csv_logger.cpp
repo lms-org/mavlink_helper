@@ -21,7 +21,7 @@ bool MavlinkCsvLogger::initialize() {
     }
     
     if(createDateSubdirectory) {
-        directory = directory + "/" + lms::extra::currentTimeString();
+        directory = directory + "/" + lms::currentTimeString();
     }
     
     // create directory if not existing (ignoring any errors here)

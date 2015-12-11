@@ -1,7 +1,6 @@
 #ifndef MAVLINK_CONFIG_H
 #define MAVLINK_CONFIG_H
 
-#include <lms/datamanager.h>
 #include <lms/module.h>
 
 #include <vector>

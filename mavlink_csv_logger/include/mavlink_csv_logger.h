@@ -1,7 +1,6 @@
 #ifndef MAVLINK_CSV_LOGGER_H
 #define MAVLINK_CSV_LOGGER_H
 
-#include <lms/datamanager.h>
 #include <lms/module.h>
 
 #include <fstream>

@@ -1,7 +1,6 @@
 #ifndef MAVLINK_DEBUG_H
 #define MAVLINK_DEBUG_H
 
-#include <lms/datamanager.h>
 #include <lms/module.h>
 #include <lms/extra/time.h>
 
