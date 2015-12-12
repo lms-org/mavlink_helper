@@ -103,9 +103,9 @@ void MavlinkToData::parseHeartBeat(const mavlink_message_t &msg){
 
             if( data.remote_control == REMOTE_CONTROL_STATUS_DISCONNECTED ){
                 rcState =phoenix_CC2016_service::RemoteControlState::DISCONNECTED;
-            } else if( data.remote_control == REMOTE_CONTROL_STATUS_CONNECTED ){
+            } else if( data.remote_control == REMOTE_CONTROL_STATUS_SEMI_AUTONOMOUS || data.remote_control == REMOTE_CONTROL_STATUS_SEMI_AUTONOMOUS ){
                 rcState =phoenix_CC2016_service::RemoteControlState::IDLE;
-            }else if(data.remote_control == REMOTE_CONTROL_STATUS_ACTIVE){
+            }else if(data.remote_control == REMOTE_CONTROL_STATUS_MANUAL){
                 rcState =phoenix_CC2016_service::RemoteControlState::ACTIVE;
             }else{
                 logger.error("parseHeartBeat")<<"invalid rc-state: "<<data.remote_control;
