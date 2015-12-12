@@ -5,6 +5,8 @@
 
 
 bool MavlinkToData::initialize() {
+    inChannel = readChannel<Mavlink::Data>("MAVLINK_IN");
+    sensors = writeChannel<sensor_utils::SensorContainer>("SENSORS");
     return true;
 }
 

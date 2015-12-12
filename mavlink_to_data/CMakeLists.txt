@@ -9,4 +9,4 @@ set(HEADERS
 
 include_directories(include)
 add_library(mavlink_to_data MODULE ${SOURCES} ${HEADERS})
-target_link_libraries(mavlink_to_data PRIVATE lmscore)
+target_link_libraries(mavlink_to_data PRIVATE lmscore sensor_utils phoenix_CC2016_service)
