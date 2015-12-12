@@ -39,7 +39,7 @@ void MavlinkToData::parseIMU(const mavlink_message_t &msg){
     mavlink_msg_imu_decode(&msg,&data);
     sensor_utils::IMU imu;
     imu.sensorId(msg.compid);
-    imu.name(config().get<std::string>("imu_"+std::to_string(imu.sensorId()),"UNKOWN"));
+    imu.name(config().get<std::string>("imu_"+std::to_string(imu.sensorId()),"IMU_"+imu.sensorId()));
     //acc
     imu.acc.x = data.xacc;
     imu.acc.y = data.yacc;
@@ -61,8 +61,8 @@ void MavlinkToData::parseOdometer(const mavlink_message_t &msg){
     mavlink_msg_odometer_decode(&msg,&data);
     std::string odoString = "odo_"+std::to_string(msg.compid);
     sensor_utils::Odometer odometer;
-    odometer.name(config().get<std::string>(odoString+"_name","UNKOWN"));
     odometer.sensorId(msg.compid);
+    odometer.name(config().get<std::string>(odoString+"_name","ODOMETER_"+odometer.sensorId()));
     odometer.xdist = data.xdist;
     odometer.ydist = data.ydist;
     odometer.zdist = data.zdist;
@@ -83,7 +83,7 @@ void MavlinkToData::parseProximity(const mavlink_message_t &msg){
     sensor_utils::DistanceSensor sensor;
     sensor.sensorId(sensor_id);
     std::string sensor_string = "distance_"+std::to_string(sensor_id);
-    sensor.name(config().get<std::string>(sensor_string+"_name","UNKOWN"));
+    sensor.name(config().get<std::string>(sensor_string+"_name","DISTANCE_"+sensor_id));
     sensor.distance = data.distance;
     sensor.direction = config().get<float>(sensor_string+"_direction",0);
     sensor.localPosition.x = config().get<float>(sensor_string+"_x",0);
