@@ -37,21 +37,21 @@ void MavlinkToData::parseIncomingMessages(){
 void MavlinkToData::parseIMU(const mavlink_message_t &msg){
     mavlink_imu_t data;
     mavlink_msg_imu_decode(&msg,&data);
-    sensor_utils::IMU imu;
-    imu.sensorId(msg.compid);
-    imu.name(config().get<std::string>("imu_"+std::to_string(imu.sensorId()),"IMU_"+imu.sensorId()));
+    std::shared_ptr<sensor_utils::IMU> imu = std::make_shared<sensor_utils::IMU>();
+    imu->sensorId(msg.compid);
+    imu->name(config().get<std::string>("imu_"+std::to_string(imu->sensorId()),"IMU_"+imu->sensorId()));
     //acc
-    imu.acc.x = data.xacc;
-    imu.acc.y = data.yacc;
-    imu.acc.z = data.zacc;
+    imu->acc.x = data.xacc;
+    imu->acc.y = data.yacc;
+    imu->acc.z = data.zacc;
     //gyro
-    imu.gyro.x = data.xgyro;
-    imu.gyro.y = data.ygyro;
-    imu.gyro.z = data.zgyro;
+    imu->gyro.x = data.xgyro;
+    imu->gyro.y = data.ygyro;
+    imu->gyro.z = data.zgyro;
     //mag
-    imu.magnetometer.x = data.xmag;
-    imu.magnetometer.y = data.ymag;
-    imu.magnetometer.z = data.zmag;
+    imu->magnetometer.x = data.xmag;
+    imu->magnetometer.y = data.ymag;
+    imu->magnetometer.z = data.zmag;
     sensors->put(imu);
 
 }
@@ -60,15 +60,15 @@ void MavlinkToData::parseOdometer(const mavlink_message_t &msg){
     mavlink_odometer_t data;
     mavlink_msg_odometer_decode(&msg,&data);
     std::string odoString = "odo_"+std::to_string(msg.compid);
-    sensor_utils::Odometer odometer;
-    odometer.sensorId(msg.compid);
-    odometer.name(config().get<std::string>(odoString+"_name","ODOMETER_"+odometer.sensorId()));
-    odometer.xdist = data.xdist;
-    odometer.ydist = data.ydist;
-    odometer.zdist = data.zdist;
-    odometer.xvelocity = data.xvelocity;
-    odometer.yvelocity = data.yvelocity;
-    odometer.zvelocity = data.zvelocity;
+    std::shared_ptr<sensor_utils::Odometer> odometer = std::make_shared<sensor_utils::Odometer>();
+    odometer->sensorId(msg.compid);
+    odometer->name(config().get<std::string>(odoString+"_name","ODOMETER_"+odometer->sensorId()));
+    odometer->xdist = data.xdist;
+    odometer->ydist = data.ydist;
+    odometer->zdist = data.zdist;
+    odometer->xvelocity = data.xvelocity;
+    odometer->yvelocity = data.yvelocity;
+    odometer->zvelocity = data.zvelocity;
     sensors->put(odometer);
 
 
@@ -80,14 +80,14 @@ void MavlinkToData::parseProximity(const mavlink_message_t &msg){
     mavlink_proximity_t data;
     mavlink_msg_proximity_decode(&msg,&data);
 
-    sensor_utils::DistanceSensor sensor;
-    sensor.sensorId(sensor_id);
+    std::shared_ptr<sensor_utils::DistanceSensor> sensor =std::make_shared<sensor_utils::DistanceSensor>();
+    sensor->sensorId(sensor_id);
     std::string sensor_string = "distance_"+std::to_string(sensor_id);
-    sensor.name(config().get<std::string>(sensor_string+"_name","DISTANCE_"+sensor_id));
-    sensor.distance = data.distance;
-    sensor.direction = config().get<float>(sensor_string+"_direction",0);
-    sensor.localPosition.x = config().get<float>(sensor_string+"_x",0);
-    sensor.localPosition.y = config().get<float>(sensor_string+"_y",0);
+    sensor->name(config().get<std::string>(sensor_string+"_name","DISTANCE_"+sensor_id));
+    sensor->distance = data.distance;
+    sensor->direction = config().get<float>(sensor_string+"_direction",0);
+    sensor->localPosition.x = config().get<float>(sensor_string+"_x",0);
+    sensor->localPosition.y = config().get<float>(sensor_string+"_y",0);
     sensors->put(sensor);
 }
 
@@ -103,7 +103,7 @@ void MavlinkToData::parseHeartBeat(const mavlink_message_t &msg){
 
             if( data.remote_control == REMOTE_CONTROL_STATUS_DISCONNECTED ){
                 rcState =phoenix_CC2016_service::RemoteControlState::DISCONNECTED;
-            } else if( data.remote_control == REMOTE_CONTROL_STATUS_SEMI_AUTONOMOUS || data.remote_control == REMOTE_CONTROL_STATUS_SEMI_AUTONOMOUS ){
+            } else if( data.remote_control == REMOTE_CONTROL_STATUS_SEMI_AUTONOMOUS || data.remote_control == REMOTE_CONTROL_STATUS_AUTONOMOUS ){
                 rcState =phoenix_CC2016_service::RemoteControlState::IDLE;
             }else if(data.remote_control == REMOTE_CONTROL_STATUS_MANUAL){
                 rcState =phoenix_CC2016_service::RemoteControlState::ACTIVE;
