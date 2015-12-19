@@ -97,7 +97,11 @@ void MavlinkToData::parseHeartBeat(const mavlink_message_t &msg){
             mavlink_msg_heartbeat_decode(&msg,&data);
             // HEARTBEAT found
             lms::ServiceHandle<phoenix_CC2016_service::Phoenix_CC2016Service> service = getService<phoenix_CC2016_service::Phoenix_CC2016Service>("PHOENIX_SERVICE");
-
+            if(!service.isValid())
+            {
+                return;
+            }
+    
             //get rc state
             phoenix_CC2016_service::RemoteControlState rcState = phoenix_CC2016_service::RemoteControlState::IDLE;
 
