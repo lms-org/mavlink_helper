@@ -93,37 +93,37 @@ void MavlinkToData::parseProximity(const mavlink_message_t &msg){
 
 
 void MavlinkToData::parseHeartBeat(const mavlink_message_t &msg){
-            mavlink_heartbeat_t data;
-            mavlink_msg_heartbeat_decode(&msg,&data);
-            // HEARTBEAT found
-            lms::ServiceHandle<phoenix_CC2016_service::Phoenix_CC2016Service> service = getService<phoenix_CC2016_service::Phoenix_CC2016Service>("PHOENIX_SERVICE");
-            if(!service.isValid())
-            {
-                return;
-            }
-    
-            //get rc state
-            phoenix_CC2016_service::RemoteControlState rcState = phoenix_CC2016_service::RemoteControlState::IDLE;
+    mavlink_heartbeat_t data;
+    mavlink_msg_heartbeat_decode(&msg,&data);
 
-            if( data.remote_control == REMOTE_CONTROL_STATUS_DISCONNECTED ){
-                rcState =phoenix_CC2016_service::RemoteControlState::DISCONNECTED;
-            } else if( data.remote_control == REMOTE_CONTROL_STATUS_SEMI_AUTONOMOUS || data.remote_control == REMOTE_CONTROL_STATUS_AUTONOMOUS ){
-                rcState =phoenix_CC2016_service::RemoteControlState::IDLE;
-            }else if(data.remote_control == REMOTE_CONTROL_STATUS_MANUAL){
-                rcState =phoenix_CC2016_service::RemoteControlState::ACTIVE;
-            }else{
-                logger.error("parseHeartBeat")<<"invalid rc-state: "<<data.remote_control;
-            }
-            phoenix_CC2016_service::CCDriveMode driveMode = phoenix_CC2016_service::CCDriveMode::IDLE;
-            if(data.drive_mode == DRIVE_MODE_TRACK){
-                driveMode = phoenix_CC2016_service::CCDriveMode::FOH;
-            }else if(data.drive_mode == DRIVE_MODE_TRACK_OBSTACLES){
-                driveMode = phoenix_CC2016_service::CCDriveMode::FMH;
-            }else if(data.drive_mode == DRIVE_MODE_PARKING){
-                driveMode = phoenix_CC2016_service::CCDriveMode::PARKING;
-            }
-            //TODO get values
-            service->update(rcState,driveMode,data.battery_voltage);
+    lms::ServiceHandle<phoenix_CC2016_service::Phoenix_CC2016Service> service = getService<phoenix_CC2016_service::Phoenix_CC2016Service>("PHOENIX_SERVICE");
+    if(!service.isValid())
+    {
+        return;
+    }
 
+    //get rc state
+    phoenix_CC2016_service::RemoteControlState rcState = phoenix_CC2016_service::RemoteControlState::IDLE;
 
+    if( data.remote_control == REMOTE_CONTROL_STATUS_DISCONNECTED ){
+        rcState =phoenix_CC2016_service::RemoteControlState::DISCONNECTED;
+    } else if( data.remote_control == REMOTE_CONTROL_STATUS_SEMI_AUTONOMOUS || data.remote_control == REMOTE_CONTROL_STATUS_AUTONOMOUS ){
+        rcState =phoenix_CC2016_service::RemoteControlState::IDLE;
+    }else if(data.remote_control == REMOTE_CONTROL_STATUS_MANUAL){
+        rcState =phoenix_CC2016_service::RemoteControlState::ACTIVE;
+    }else{
+        logger.error("parseHeartBeat")<<"invalid rc-state: "<<data.remote_control;
+    }
+
+    phoenix_CC2016_service::CCDriveMode driveMode = phoenix_CC2016_service::CCDriveMode::IDLE;
+    if(data.drive_mode == DRIVE_MODE_TRACK){
+        driveMode = phoenix_CC2016_service::CCDriveMode::FOH;
+    }else if(data.drive_mode == DRIVE_MODE_TRACK_OBSTACLES){
+        driveMode = phoenix_CC2016_service::CCDriveMode::FMH;
+    }else if(data.drive_mode == DRIVE_MODE_PARKING){
+        driveMode = phoenix_CC2016_service::CCDriveMode::PARKING;
+    }
+
+    //TODO get values
+    service->update(rcState,driveMode,data.battery_voltage);
 }
