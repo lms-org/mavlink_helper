@@ -3,8 +3,6 @@
 
 #include <lms/module.h>
 
-#include "phoenix_CC2016_service/phoenix_CC2016_service.h"
-
 #include <mavlink/CC2016/mavlink.h>
 #include <mavlink/lms/data.h>
 #include "sensor_utils/distance_sensor.h"
