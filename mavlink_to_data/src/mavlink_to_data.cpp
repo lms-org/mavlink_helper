@@ -115,7 +115,7 @@ void MavlinkToData::parseProximity(const mavlink_message_t &msg){
     std::shared_ptr<sensor_utils::DistanceSensor> sensor =std::make_shared<sensor_utils::DistanceSensor>();
     sensor->sensorId(sensor_id);
     std::string sensor_string = "distance_"+std::to_string(sensor_id);
-    sensor->name(config().get<std::string>(sensor_string+"_name","DISTANCE_"+sensor_id));
+    sensor->name(config().get<std::string>(sensor_string+"_name","DISTANCE_" + std::to_string(sensor_id)));
     sensor->distance = data.distance;
     sensor->direction = config().get<float>(sensor_string+"_direction",0);
     sensor->localPosition.x = config().get<float>(sensor_string+"_x",0);
