@@ -26,7 +26,7 @@ void MavlinkToData::parseIncomingMessages(){
             parseHeartBeat(msg);
         }else if(msg.msgid == MAVLINK_MSG_ID_IMU){
             parseIMU(msg);
-        }else if(msg.msgid == MAVLINK_MSG_ID_ODOMETER){
+        }else if(msg.msgid == MAVLINK_MSG_ID_ODOMETER_DELTA){
             parseOdometer(msg);
         }else if(msg.msgid == MAVLINK_MSG_ID_PROXIMITY){
             parseProximity(msg);
@@ -90,17 +90,16 @@ void MavlinkToData::parseIMU(const mavlink_message_t &msg){
 }
 
 void MavlinkToData::parseOdometer(const mavlink_message_t &msg){
-    mavlink_odometer_t data;
-    mavlink_msg_odometer_decode(&msg,&data);
+    mavlink_odometer_delta_t data;
+    mavlink_msg_odometer_delta_decode(&msg,&data);
     std::shared_ptr<sensor_utils::Odometer> odometer = std::make_shared<sensor_utils::Odometer>();
     odometer->sensorId(msg.compid);
 
-    odometer->sensorId(msg.compid);
     std::string sensor = "odometer_" + std::to_string(odometer->sensorId());
     odometer->name(config().get<std::string>(sensor, "ODOMETER_" + std::to_string(odometer->sensorId())));
 
     odometer->distance = sensor_utils::Odometer::Measurement( data.xdist, data.ydist, data.zdist );
-    odometer->distance = sensor_utils::Odometer::Measurement( data.xvelocity, data.yvelocity, data.zvelocity );
+    odometer->velocity = sensor_utils::Odometer::Measurement( data.xvelocity, data.yvelocity, data.zvelocity );
 
     // TODO: covariances, quality
 
