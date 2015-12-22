@@ -37,21 +37,54 @@ void MavlinkToData::parseIncomingMessages(){
 void MavlinkToData::parseIMU(const mavlink_message_t &msg){
     mavlink_imu_t data;
     mavlink_msg_imu_decode(&msg,&data);
+
     std::shared_ptr<sensor_utils::IMU> imu = std::make_shared<sensor_utils::IMU>();
+
     imu->sensorId(msg.compid);
-    imu->name(config().get<std::string>("imu_"+std::to_string(imu->sensorId()),"IMU_"+imu->sensorId()));
-    //acc
-    imu->acc.x = data.xacc;
-    imu->acc.y = data.yacc;
-    imu->acc.z = data.zacc;
-    //gyro
-    imu->gyro.x = data.xgyro;
-    imu->gyro.y = data.ygyro;
-    imu->gyro.z = data.zgyro;
-    //mag
-    imu->magnetometer.x = data.xmag;
-    imu->magnetometer.y = data.ymag;
-    imu->magnetometer.z = data.zmag;
+    std::string sensor = "imu_" + std::to_string(imu->sensorId());
+    imu->name(config().get<std::string>(sensor, "IMU_" + std::to_string(imu->sensorId())));
+
+    // Measurements
+    imu->accelerometer = sensor_utils::IMU::Measurement(data.xacc, data.yacc, data.zacc);
+    imu->gyroscope     = sensor_utils::IMU::Measurement(data.xgyro, data.ygyro, data.zgyro);
+    imu->magnetometer  = sensor_utils::IMU::Measurement(data.xmag, data.ymag, data.zmag);
+
+    // Set covariances from config
+    // TODO: load covariances once up-front and update only on config change (for performance)
+    imu->accelerometerCovariance = sensor_utils::IMU::Covariance(
+        config().get<float>(sensor + "_acc_cov_xx", 1),
+        config().get<float>(sensor + "_acc_cov_xy", 0),
+        config().get<float>(sensor + "_acc_cov_xz", 0),
+        config().get<float>(sensor + "_acc_cov_xy", 0),
+        config().get<float>(sensor + "_acc_cov_yy", 1),
+        config().get<float>(sensor + "_acc_cov_yz", 0),
+        config().get<float>(sensor + "_acc_cov_xz", 0),
+        config().get<float>(sensor + "_acc_cov_xz", 0),
+        config().get<float>(sensor + "_acc_cov_zz", 1)
+    );
+    imu->gyroscopeCovariance = sensor_utils::IMU::Covariance(
+        config().get<float>(sensor + "_gyro_cov_xx", 1),
+        config().get<float>(sensor + "_gyro_cov_xy", 0),
+        config().get<float>(sensor + "_gyro_cov_xz", 0),
+        config().get<float>(sensor + "_gyro_cov_xy", 0),
+        config().get<float>(sensor + "_gyro_cov_yy", 1),
+        config().get<float>(sensor + "_gyro_cov_yz", 0),
+        config().get<float>(sensor + "_gyro_cov_xz", 0),
+        config().get<float>(sensor + "_gyro_cov_yz", 0),
+        config().get<float>(sensor + "_gyro_cov_zz", 1)
+    );
+    imu->magnetometerCovariance = sensor_utils::IMU::Covariance(
+        config().get<float>(sensor + "_mag_cov_xx", 1),
+        config().get<float>(sensor + "_mag_cov_xy", 0),
+        config().get<float>(sensor + "_mag_cov_xz", 0),
+        config().get<float>(sensor + "_mag_cov_xy", 0),
+        config().get<float>(sensor + "_mag_cov_yy", 1),
+        config().get<float>(sensor + "_mag_cov_yz", 0),
+        config().get<float>(sensor + "_mag_cov_xz", 0),
+        config().get<float>(sensor + "_mag_cov_yz", 0),
+        config().get<float>(sensor + "_mag_cov_zz", 1)
+    );
+
     sensors->put(imu);
 
 }
@@ -59,19 +92,19 @@ void MavlinkToData::parseIMU(const mavlink_message_t &msg){
 void MavlinkToData::parseOdometer(const mavlink_message_t &msg){
     mavlink_odometer_t data;
     mavlink_msg_odometer_decode(&msg,&data);
-    std::string odoString = "odo_"+std::to_string(msg.compid);
     std::shared_ptr<sensor_utils::Odometer> odometer = std::make_shared<sensor_utils::Odometer>();
     odometer->sensorId(msg.compid);
-    odometer->name(config().get<std::string>(odoString+"_name","ODOMETER_"+odometer->sensorId()));
-    odometer->xdist = data.xdist;
-    odometer->ydist = data.ydist;
-    odometer->zdist = data.zdist;
-    odometer->xvelocity = data.xvelocity;
-    odometer->yvelocity = data.yvelocity;
-    odometer->zvelocity = data.zvelocity;
+
+    odometer->sensorId(msg.compid);
+    std::string sensor = "odometer_" + std::to_string(odometer->sensorId());
+    odometer->name(config().get<std::string>(sensor, "ODOMETER_" + std::to_string(odometer->sensorId())));
+
+    odometer->distance = sensor_utils::Odometer::Measurement( data.xdist, data.ydist, data.zdist );
+    odometer->distance = sensor_utils::Odometer::Measurement( data.xvelocity, data.yvelocity, data.zvelocity );
+
+    // TODO: covariances, quality
+
     sensors->put(odometer);
-
-
 }
 
 void MavlinkToData::parseProximity(const mavlink_message_t &msg){
