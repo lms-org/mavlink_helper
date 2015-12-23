@@ -46,9 +46,18 @@ void MavlinkToData::parseIMU(const mavlink_message_t &msg){
     std::string sensor = "imu_" + std::to_string(imu->sensorId());
     imu->name(config().get<std::string>(sensor, "IMU_" + std::to_string(imu->sensorId())));
 
+    // Biases
+    // TODO: add acc + mag bias as well
+    // TODO: update only on config change for performance?
+    auto gyroBias = sensor_utils::IMU::Measurement(
+        config().get<float>(sensor + "_gyro_bias_x", 0),
+        config().get<float>(sensor + "_gyro_bias_y", 0),
+        config().get<float>(sensor + "_gyro_bias_z", 0)
+    );
+
     // Measurements
     imu->accelerometer = sensor_utils::IMU::Measurement(data.xacc, data.yacc, data.zacc);
-    imu->gyroscope     = sensor_utils::IMU::Measurement(data.xgyro, data.ygyro, data.zgyro);
+    imu->gyroscope     = sensor_utils::IMU::Measurement(data.xgyro, data.ygyro, data.zgyro) - gyroBias;
     imu->magnetometer  = sensor_utils::IMU::Measurement(data.xmag, data.ymag, data.zmag);
 
     // Set covariances from config
