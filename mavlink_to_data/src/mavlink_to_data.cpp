@@ -18,6 +18,7 @@ bool MavlinkToData::deinitialize() {
 
 bool MavlinkToData::cycle() {
     parseIncomingMessages();
+    accumulateMessages();
     return true;
 }
 
@@ -32,6 +33,22 @@ void MavlinkToData::parseIncomingMessages(){
             parseOdometer(msg);
         }else if(msg.msgid == MAVLINK_MSG_ID_PROXIMITY){
             parseProximity(msg);
+        }
+    }
+}
+
+void MavlinkToData::accumulateMessages()
+{
+    for( auto& data : accumulator )
+    {
+        switch( data.first.first )
+        {
+            case MAVLINK_MSG_ID_IMU:
+                accumulateIMU(data.first.second, data.second);
+                break;
+            case MAVLINK_MSG_ID_ODOMETER_DELTA:
+                accumulateOdometer(data.first.second, data.second);
+                break;
         }
     }
 }
@@ -60,61 +77,27 @@ void MavlinkToData::parseIMU(const mavlink_message_t &msg){
     imu->gyroscope     = sensor_utils::IMU::Measurement(data.xgyro, data.ygyro, data.zgyro) - gyroBias;
     imu->magnetometer  = sensor_utils::IMU::Measurement(data.xmag, data.ymag, data.zmag);
 
-    // Set covariances from config
-    // TODO: load covariances once up-front and update only on config change (for performance)
-    imu->accelerometerCovariance = sensor_utils::IMU::Covariance(
-        config().get<float>(sensor + "_acc_cov_xx", 1),
-        config().get<float>(sensor + "_acc_cov_xy", 0),
-        config().get<float>(sensor + "_acc_cov_xz", 0),
-        config().get<float>(sensor + "_acc_cov_xy", 0),
-        config().get<float>(sensor + "_acc_cov_yy", 1),
-        config().get<float>(sensor + "_acc_cov_yz", 0),
-        config().get<float>(sensor + "_acc_cov_xz", 0),
-        config().get<float>(sensor + "_acc_cov_xz", 0),
-        config().get<float>(sensor + "_acc_cov_zz", 1)
-    );
-    imu->gyroscopeCovariance = sensor_utils::IMU::Covariance(
-        config().get<float>(sensor + "_gyro_cov_xx", 1),
-        config().get<float>(sensor + "_gyro_cov_xy", 0),
-        config().get<float>(sensor + "_gyro_cov_xz", 0),
-        config().get<float>(sensor + "_gyro_cov_xy", 0),
-        config().get<float>(sensor + "_gyro_cov_yy", 1),
-        config().get<float>(sensor + "_gyro_cov_yz", 0),
-        config().get<float>(sensor + "_gyro_cov_xz", 0),
-        config().get<float>(sensor + "_gyro_cov_yz", 0),
-        config().get<float>(sensor + "_gyro_cov_zz", 1)
-    );
-    imu->magnetometerCovariance = sensor_utils::IMU::Covariance(
-        config().get<float>(sensor + "_mag_cov_xx", 1),
-        config().get<float>(sensor + "_mag_cov_xy", 0),
-        config().get<float>(sensor + "_mag_cov_xz", 0),
-        config().get<float>(sensor + "_mag_cov_xy", 0),
-        config().get<float>(sensor + "_mag_cov_yy", 1),
-        config().get<float>(sensor + "_mag_cov_yz", 0),
-        config().get<float>(sensor + "_mag_cov_xz", 0),
-        config().get<float>(sensor + "_mag_cov_yz", 0),
-        config().get<float>(sensor + "_mag_cov_zz", 1)
-    );
-
-    sensors->put(imu);
-
+    // Save message in accumulator
+    auto accumulatorKey = std::make_pair( static_cast<uint8_t>(MAVLINK_MSG_ID_IMU), static_cast<uint8_t>(imu->sensorId()) );
+    accumulator[accumulatorKey].push_back(imu);
 }
 
 void MavlinkToData::parseOdometer(const mavlink_message_t &msg){
     mavlink_odometer_delta_t data;
     mavlink_msg_odometer_delta_decode(&msg,&data);
-    std::shared_ptr<sensor_utils::Odometer> odometer = std::make_shared<sensor_utils::Odometer>();
-    odometer->sensorId(msg.compid);
 
+    std::shared_ptr<sensor_utils::Odometer> odometer = std::make_shared<sensor_utils::Odometer>();
+
+    odometer->sensorId(msg.compid);
     std::string sensor = "odometer_" + std::to_string(odometer->sensorId());
     odometer->name(config().get<std::string>(sensor, "ODOMETER_" + std::to_string(odometer->sensorId())));
 
     odometer->distance = sensor_utils::Odometer::Measurement( data.xdist, data.ydist, data.zdist );
     odometer->velocity = sensor_utils::Odometer::Measurement( data.xvelocity, data.yvelocity, data.zvelocity );
 
-    // TODO: covariances, quality
-
-    sensors->put(odometer);
+    // Save message in accumulator
+    auto accumulatorKey = std::make_pair( static_cast<uint8_t>(MAVLINK_MSG_ID_ODOMETER_DELTA), static_cast<uint8_t>(odometer->sensorId()) );
+    accumulator[accumulatorKey].push_back(odometer);
 }
 
 void MavlinkToData::parseProximity(const mavlink_message_t &msg){
@@ -179,4 +162,104 @@ void MavlinkToData::parseHeartBeat(const mavlink_message_t &msg){
             service->update(rcState,driveMode,data.battery_voltage);
         }
     }
+}
+
+void MavlinkToData::accumulateIMU(uint8_t sensorId, MavlinkToData::SensorAccumulator &samples)
+{
+    std::shared_ptr<sensor_utils::IMU> imu = std::make_shared<sensor_utils::IMU>();
+
+    imu->sensorId(sensorId);
+    std::string sensor = "imu_" + std::to_string(imu->sensorId());
+    imu->name(config().get<std::string>(sensor, "IMU_" + std::to_string(imu->sensorId())));
+    imu->accelerometer.setZero();
+    imu->gyroscope.setZero();
+    imu->magnetometer.setZero();
+
+    for(const auto& s : samples)
+    {
+        auto i = static_cast<sensor_utils::IMU*>( s.get() );
+        imu->accelerometer  += i->accelerometer;
+        imu->gyroscope      += i->gyroscope;
+        imu->magnetometer   += i->magnetometer;
+    }
+
+    if( samples.size() > 0 )
+    {
+        // Average across samples
+        imu->accelerometer /= samples.size();
+        imu->gyroscope /= samples.size();
+        imu->magnetometer /= samples.size();
+
+        // Set covariances from config
+        // TODO: load covariances once up-front and update only on config change (for performance)
+        // TODO: adjust variances depending on sample count
+        imu->accelerometerCovariance = sensor_utils::IMU::Covariance(
+                config().get<float>(sensor + "_acc_cov_xx", 1),
+                config().get<float>(sensor + "_acc_cov_xy", 0),
+                config().get<float>(sensor + "_acc_cov_xz", 0),
+                config().get<float>(sensor + "_acc_cov_xy", 0),
+                config().get<float>(sensor + "_acc_cov_yy", 1),
+                config().get<float>(sensor + "_acc_cov_yz", 0),
+                config().get<float>(sensor + "_acc_cov_xz", 0),
+                config().get<float>(sensor + "_acc_cov_xz", 0),
+                config().get<float>(sensor + "_acc_cov_zz", 1)
+        );
+        imu->gyroscopeCovariance = sensor_utils::IMU::Covariance(
+                config().get<float>(sensor + "_gyro_cov_xx", 1),
+                config().get<float>(sensor + "_gyro_cov_xy", 0),
+                config().get<float>(sensor + "_gyro_cov_xz", 0),
+                config().get<float>(sensor + "_gyro_cov_xy", 0),
+                config().get<float>(sensor + "_gyro_cov_yy", 1),
+                config().get<float>(sensor + "_gyro_cov_yz", 0),
+                config().get<float>(sensor + "_gyro_cov_xz", 0),
+                config().get<float>(sensor + "_gyro_cov_yz", 0),
+                config().get<float>(sensor + "_gyro_cov_zz", 1)
+        );
+        imu->magnetometerCovariance = sensor_utils::IMU::Covariance(
+                config().get<float>(sensor + "_mag_cov_xx", 1),
+                config().get<float>(sensor + "_mag_cov_xy", 0),
+                config().get<float>(sensor + "_mag_cov_xz", 0),
+                config().get<float>(sensor + "_mag_cov_xy", 0),
+                config().get<float>(sensor + "_mag_cov_yy", 1),
+                config().get<float>(sensor + "_mag_cov_yz", 0),
+                config().get<float>(sensor + "_mag_cov_xz", 0),
+                config().get<float>(sensor + "_mag_cov_yz", 0),
+                config().get<float>(sensor + "_mag_cov_zz", 1)
+        );
+
+        sensors->put(imu);
+    }
+
+    // Clear accumulated messages
+    samples.clear();
+}
+
+void MavlinkToData::accumulateOdometer(uint8_t sensorId, MavlinkToData::SensorAccumulator &samples)
+{
+    std::shared_ptr<sensor_utils::Odometer> odometer = std::make_shared<sensor_utils::Odometer>();
+
+    odometer->sensorId(sensorId);
+    std::string sensor = "odometer_" + std::to_string(odometer->sensorId());
+    odometer->name(config().get<std::string>(sensor, "ODOMETER_" + std::to_string(odometer->sensorId())));
+    odometer->distance.setZero();
+    odometer->velocity.setZero();
+
+    for(const auto& s : samples)
+    {
+        auto i = static_cast<sensor_utils::Odometer*>( s.get() );
+        odometer->distance  += i->distance;
+        odometer->velocity  += i->velocity;
+    }
+
+    if( samples.size() > 0 )
+    {
+        odometer->velocity /= samples.size();
+
+        // TODO: covariances, quality
+
+        sensors->put(odometer);
+    }
+    
+    // Clear accumulated messages
+    samples.clear();
 }
