@@ -5,15 +5,12 @@
 static mavlink_message_info_t msgInfos[256] = MAVLINK_MESSAGE_INFO;
 
 bool umavlinkudebug::initialize() {
-    // Config
-    config = getConfig();
-    
     // Setup datachannels
-    auto channel = config->get<std::string>("channel");
+    auto channel = config().get<std::string>("channel");
     mavlinkChannel = readChannel<Mavlink::Data>(channel);
     
     // Reset timestamp
-    lastTimestamp = lms::extra::PrecisionTime::now();
+    lastTimestamp = lms::Time::now();
     
     return true;
 }
@@ -25,8 +22,8 @@ bool umavlinkudebug::deinitialize() {
 bool umavlinkudebug::cycle() {
     
     // Measure time-delta
-    auto timeDelta = lms::extra::PrecisionTime::since( lastTimestamp ).toFloat();
-    lastTimestamp = lms::extra::PrecisionTime::now();
+    auto timeDelta = lastTimestamp.since().toFloat();
+    lastTimestamp = lms::Time::now();
     
     messageCounter.clear();
     for( const auto& msg : *mavlinkChannel )

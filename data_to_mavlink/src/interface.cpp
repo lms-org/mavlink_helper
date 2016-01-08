@@ -1,7 +1,3 @@
 #include "data_to_mavlink.h"
 
-extern "C" {
-void* getInstance () {
-    return new CarToMavlink();
-}
-}
+LMS_MODULE_INTERFACE(CarToMavlink)
