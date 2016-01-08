@@ -1,7 +1,3 @@
 #include "mavlink_csv_logger.h"
 
-extern "C" {
-void* getInstance () {
-    return new MavlinkCsvLogger();
-}
-}
+LMS_MODULE_INTERFACE(MavlinkCsvLogger)

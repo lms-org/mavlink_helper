@@ -2,38 +2,16 @@
 
 #include <lms/extra/time.h>
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <errno.h>
-
 static mavlink_message_info_t msgInfos[256] = MAVLINK_MESSAGE_INFO;
 
 bool MavlinkCsvLogger::initialize() {
-    // Config
-    config = getConfig();
-    
-    auto directory = config->get<std::string>("directory");
-    bool createDateSubdirectory = config->get<bool>("create_subfolder_with_current_date");
-
-    if(directory.empty()) {
-        logger.error("init") << "directory is empty";
-        return false;
-    }
-    
-    if(createDateSubdirectory) {
-        directory = directory + "/" + lms::currentTimeString();
-    }
-    
-    // create directory if not existing (ignoring any errors here)
-    mkdir(directory.c_str(), 0775);
-    
     // Set log file prefix correctly
-    prefix = directory + "/";
+    prefix = logDir("mavlink_csv");
     
     logger.debug("init") << "Log prefix: " << prefix;
     
     // Setup datachannels
-    auto channel = config->get<std::string>("channel");
+    auto channel = config().get<std::string>("channel");
     mavlinkChannel = readChannel<Mavlink::Data>(channel);
     
     return true;

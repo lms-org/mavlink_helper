@@ -39,8 +39,6 @@ protected:
     void logField(std::ofstream& out, const mavlink_field_info_t& field, const mavlink_message_t& msg);
     
 protected:
-    //! Module config
-    const lms::ModuleConfig* config;
     //! In data channel (messages received)
     lms::ReadDataChannel<Mavlink::Data> mavlinkChannel;
     
