@@ -5,8 +5,13 @@
 static mavlink_message_info_t msgInfos[256] = MAVLINK_MESSAGE_INFO;
 
 bool MavlinkCsvLogger::initialize() {
+    if(! isEnableSave()) {
+        logger.error() << "Command line option --enable-save was not specified";
+        return false;
+    }
+
     // Set log file prefix correctly
-    prefix = logDir("mavlink_csv");
+    prefix = saveLogDir("mavlink_csv");
     
     logger.debug("init") << "Log prefix: " << prefix;
     
