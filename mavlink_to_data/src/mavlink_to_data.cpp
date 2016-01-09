@@ -9,6 +9,26 @@
 bool MavlinkToData::initialize() {
     inChannel = readChannel<Mavlink::Data>("MAVLINK_IN");
     sensors = writeChannel<sensor_utils::SensorContainer>("SENSORS");
+
+    // Configure sensor timebase
+    auto tb = config().get<std::string>("sensor_timebase", "mavlink");
+    if(tb == "fixed")
+    {
+        timebase = Timebase::FIXED;
+    }
+    else if(tb == "system")
+    {
+        timebase = Timebase::SYSTEM;
+    }
+    else if(tb == "mavlink")
+    {
+        timebase = Timebase::MAVLINK;
+    }
+    else
+    {
+        logger.error("computeCurrentTimestamp") << "Invalid sensor timebase";
+        return false;
+    }
     return true;
 }
 
@@ -17,8 +37,10 @@ bool MavlinkToData::deinitialize() {
 }
 
 bool MavlinkToData::cycle() {
+    computeCurrentTimestamp();
     parseIncomingMessages();
     accumulateMessages();
+
     return true;
 }
 
@@ -62,6 +84,7 @@ void MavlinkToData::parseIMU(const mavlink_message_t &msg){
     imu->sensorId(msg.compid);
     std::string sensor = "imu_" + std::to_string(imu->sensorId());
     imu->name(config().get<std::string>(sensor, "IMU_" + std::to_string(imu->sensorId())));
+    imu->timestamp(timestamp);
 
     // Biases
     // TODO: add acc + mag bias as well
@@ -91,6 +114,7 @@ void MavlinkToData::parseOdometer(const mavlink_message_t &msg){
     odometer->sensorId(msg.compid);
     std::string sensor = "odometer_" + std::to_string(odometer->sensorId());
     odometer->name(config().get<std::string>(sensor, "ODOMETER_" + std::to_string(odometer->sensorId())));
+    odometer->timestamp(timestamp);
 
     odometer->distance = sensor_utils::Odometer::Measurement( data.xdist, data.ydist, data.zdist );
     odometer->velocity = sensor_utils::Odometer::Measurement( data.xvelocity, data.yvelocity, data.zvelocity );
@@ -110,6 +134,8 @@ void MavlinkToData::parseProximity(const mavlink_message_t &msg){
     sensor->sensorId(sensor_id);
     std::string sensor_string = "distance_"+std::to_string(sensor_id);
     sensor->name(config().get<std::string>(sensor_string+"_name","DISTANCE_" + std::to_string(sensor_id)));
+    sensor->timestamp(timestamp);
+
     sensor->distance = data.distance;
     sensor->direction = config().get<float>(sensor_string+"_direction",0);
     sensor->localPosition.x = config().get<float>(sensor_string+"_x",0);
@@ -128,7 +154,9 @@ void MavlinkToData::parseHeartBeat(const mavlink_message_t &msg){
         if(service.isValid())
         {
             // TODO: handle overflows? (-> interpolator service?)
-            service->sync("SYSTEM", "MAVLINK", lms::Time::now(), lms::Time::fromMicros(data.timestamp));
+            auto mavlinkTimestamp = lms::Time::fromMicros(data.timestamp);
+            service->sync("SYSTEM", "MAVLINK", lms::Time::now(), mavlinkTimestamp);
+            service->sync("MAVLINK", "SENSOR", mavlinkTimestamp, timestamp);
         }
     }
 
@@ -171,6 +199,8 @@ void MavlinkToData::accumulateIMU(uint8_t sensorId, MavlinkToData::SensorAccumul
     imu->sensorId(sensorId);
     std::string sensor = "imu_" + std::to_string(imu->sensorId());
     imu->name(config().get<std::string>(sensor, "IMU_" + std::to_string(imu->sensorId())));
+    imu->timestamp(timestamp);
+
     imu->accelerometer.setZero();
     imu->gyroscope.setZero();
     imu->magnetometer.setZero();
@@ -241,6 +271,8 @@ void MavlinkToData::accumulateOdometer(uint8_t sensorId, MavlinkToData::SensorAc
     odometer->sensorId(sensorId);
     std::string sensor = "odometer_" + std::to_string(odometer->sensorId());
     odometer->name(config().get<std::string>(sensor, "ODOMETER_" + std::to_string(odometer->sensorId())));
+    odometer->timestamp(timestamp);
+
     odometer->distance.setZero();
     odometer->velocity.setZero();
 
@@ -262,4 +294,55 @@ void MavlinkToData::accumulateOdometer(uint8_t sensorId, MavlinkToData::SensorAc
     
     // Clear accumulated messages
     samples.clear();
+}
+
+void MavlinkToData::computeCurrentTimestamp()
+{
+
+    switch(timebase) {
+        case Timebase::FIXED:
+            // Fixed pre-defined time-base (in hertz)
+            {
+                const auto tickrate = config().get<float>("sensor_timebase_tickrate", 100);
+                const auto usPerTick = static_cast<lms::Time::TimeType>( (1.f / tickrate) * 1e6 );
+                timestamp += lms::Time::fromMicros(usPerTick);
+            }
+            break;
+        case Timebase::SYSTEM:
+            // LMS system time
+            timestamp = lms::Time::now();
+            break;
+        case Timebase::MAVLINK:
+            // Mavlink timebase
+            // Iterate over messages and take first message with valid timestamp
+            {
+                for( const auto& msg : *inChannel )
+                {
+                    if(msg.msgid == MAVLINK_MSG_ID_HEARTBEAT){
+                        timestamp = lms::Time::fromMicros(mavlink_msg_heartbeat_get_timestamp(&msg));
+                        break;
+                    } else if(msg.msgid == MAVLINK_MSG_ID_IMU){
+                        timestamp = lms::Time::fromMicros(mavlink_msg_imu_get_timestamp(&msg));
+                        break;
+                    } else if(msg.msgid == MAVLINK_MSG_ID_ODOMETER_DELTA){
+                        timestamp = lms::Time::fromMicros(mavlink_msg_odometer_delta_get_timestamp(&msg));
+                        break;
+                    } else if(msg.msgid == MAVLINK_MSG_ID_PROXIMITY){
+                        timestamp = lms::Time::fromMicros(mavlink_msg_proximity_get_timestamp(&msg));
+                        break;
+                    }
+                }
+            }
+            break;
+    }
+
+    // Sync timebases
+    {
+        auto service = getService<timestamp_interpolator_service::TimestampInterpolatorService>("TIMESTAMP_INTERPOLATOR");
+        if(service.isValid())
+        {
+            // Sync system timebase to sensor timebase
+            service->sync("SYSTEM", "SENSOR", lms::Time::now(), timestamp);
+        }
+    }
 }

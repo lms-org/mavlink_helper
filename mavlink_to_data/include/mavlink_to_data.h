@@ -15,6 +15,13 @@
  * @brief LMS module mavlink_to_data
  **/
 class MavlinkToData : public lms::Module {
+protected:
+    enum class Timebase {
+        FIXED,
+        SYSTEM,
+        MAVLINK
+    };
+
 public:
     bool initialize() override;
     bool deinitialize() override;
@@ -37,6 +44,8 @@ protected:
     void accumulateIMU(uint8_t sensorId, SensorAccumulator& samples);
     void accumulateOdometer(uint8_t sensorId, SensorAccumulator& samples);
 
+    void computeCurrentTimestamp();
+
     // Datachannels
     lms::ReadDataChannel<Mavlink::Data> inChannel;
     //Datachannels filled with inChannel-data
@@ -44,6 +53,10 @@ protected:
     lms::WriteDataChannel<sensor_utils::SensorContainer> sensors;
 
     SensorAccumulatorContainer accumulator;
+
+    //! internal sensor timestamp for fixed-timestep base
+    Timebase timebase;
+    lms::Time timestamp;
 };
 
 #endif // MAVLINK_TO_DATA_H
