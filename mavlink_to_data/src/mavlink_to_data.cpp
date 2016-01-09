@@ -84,6 +84,7 @@ void MavlinkToData::parseIMU(const mavlink_message_t &msg){
     imu->sensorId(msg.compid);
     std::string sensor = "imu_" + std::to_string(imu->sensorId());
     imu->name(config().get<std::string>(sensor, "IMU_" + std::to_string(imu->sensorId())));
+    imu->timestamp(timestamp);
 
     // Biases
     // TODO: add acc + mag bias as well
@@ -113,6 +114,7 @@ void MavlinkToData::parseOdometer(const mavlink_message_t &msg){
     odometer->sensorId(msg.compid);
     std::string sensor = "odometer_" + std::to_string(odometer->sensorId());
     odometer->name(config().get<std::string>(sensor, "ODOMETER_" + std::to_string(odometer->sensorId())));
+    odometer->timestamp(timestamp);
 
     odometer->distance = sensor_utils::Odometer::Measurement( data.xdist, data.ydist, data.zdist );
     odometer->velocity = sensor_utils::Odometer::Measurement( data.xvelocity, data.yvelocity, data.zvelocity );
@@ -132,6 +134,8 @@ void MavlinkToData::parseProximity(const mavlink_message_t &msg){
     sensor->sensorId(sensor_id);
     std::string sensor_string = "distance_"+std::to_string(sensor_id);
     sensor->name(config().get<std::string>(sensor_string+"_name","DISTANCE_" + std::to_string(sensor_id)));
+    sensor->timestamp(timestamp);
+
     sensor->distance = data.distance;
     sensor->direction = config().get<float>(sensor_string+"_direction",0);
     sensor->localPosition.x = config().get<float>(sensor_string+"_x",0);
@@ -195,6 +199,8 @@ void MavlinkToData::accumulateIMU(uint8_t sensorId, MavlinkToData::SensorAccumul
     imu->sensorId(sensorId);
     std::string sensor = "imu_" + std::to_string(imu->sensorId());
     imu->name(config().get<std::string>(sensor, "IMU_" + std::to_string(imu->sensorId())));
+    imu->timestamp(timestamp);
+
     imu->accelerometer.setZero();
     imu->gyroscope.setZero();
     imu->magnetometer.setZero();
@@ -265,6 +271,8 @@ void MavlinkToData::accumulateOdometer(uint8_t sensorId, MavlinkToData::SensorAc
     odometer->sensorId(sensorId);
     std::string sensor = "odometer_" + std::to_string(odometer->sensorId());
     odometer->name(config().get<std::string>(sensor, "ODOMETER_" + std::to_string(odometer->sensorId())));
+    odometer->timestamp(timestamp);
+
     odometer->distance.setZero();
     odometer->velocity.setZero();
 
