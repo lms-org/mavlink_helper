@@ -283,6 +283,30 @@ void MavlinkToData::accumulateOdometer(uint8_t sensorId, MavlinkToData::SensorAc
         odometer->velocity  += i->velocity;
     }
 
+    odometer->distanceCovariance = sensor_utils::Odometer::Covariance(
+            config().get<float>(sensor + "_dist_cov_xx", 1),
+            config().get<float>(sensor + "_dist_cov_xy", 0),
+            config().get<float>(sensor + "_dist_cov_xz", 0),
+            config().get<float>(sensor + "_dist_cov_xy", 0),
+            config().get<float>(sensor + "_dist_cov_yy", 1),
+            config().get<float>(sensor + "_dist_cov_yz", 0),
+            config().get<float>(sensor + "_dist_cov_xz", 0),
+            config().get<float>(sensor + "_dist_cov_yz", 0),
+            config().get<float>(sensor + "_dist_cov_zz", 1)
+    );
+
+    odometer->velocityCovariance = sensor_utils::Odometer::Covariance(
+            config().get<float>(sensor + "_velo_cov_xx", 1),
+            config().get<float>(sensor + "_velo_cov_xy", 0),
+            config().get<float>(sensor + "_velo_cov_xz", 0),
+            config().get<float>(sensor + "_velo_cov_xy", 0),
+            config().get<float>(sensor + "_velo_cov_yy", 1),
+            config().get<float>(sensor + "_velo_cov_yz", 0),
+            config().get<float>(sensor + "_velo_cov_xz", 0),
+            config().get<float>(sensor + "_velo_cov_yz", 0),
+            config().get<float>(sensor + "_velo_cov_zz", 1)
+    );
+
     if( samples.size() > 0 )
     {
         odometer->velocity /= samples.size();
