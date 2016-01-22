@@ -147,7 +147,6 @@ void MavlinkToData::parseProximity(const mavlink_message_t &msg){
 void MavlinkToData::parseHeartBeat(const mavlink_message_t &msg){
     mavlink_heartbeat_t data;
     mavlink_msg_heartbeat_decode(&msg,&data);
-
     // Sync timestamps
     {
         auto service = getService<timestamp_interpolator_service::TimestampInterpolatorService>("TIMESTAMP_INTERPOLATOR");
@@ -165,14 +164,16 @@ void MavlinkToData::parseHeartBeat(const mavlink_message_t &msg){
         if(service.isValid())
         {
             //get rc state
-            phoenix_CC2016_service::RemoteControlState rcState = phoenix_CC2016_service::RemoteControlState::IDLE;
+            phoenix_CC2016_service::RemoteControlState rcState = phoenix_CC2016_service::RemoteControlState::UNKOWN;
 
             if( data.remote_control == REMOTE_CONTROL_STATUS_DISCONNECTED ){
                 rcState =phoenix_CC2016_service::RemoteControlState::DISCONNECTED;
-            } else if( data.remote_control == REMOTE_CONTROL_STATUS_SEMI_AUTONOMOUS || data.remote_control == REMOTE_CONTROL_STATUS_AUTONOMOUS ){
-                rcState =phoenix_CC2016_service::RemoteControlState::IDLE;
+            } else if( data.remote_control == REMOTE_CONTROL_STATUS_SEMI_AUTONOMOUS){
+                rcState = phoenix_CC2016_service::RemoteControlState::REMOTE_CONTROL_STATUS_SEMI_AUTONOMOUS;
+            }else if(data.remote_control == REMOTE_CONTROL_STATUS_AUTONOMOUS){
+                rcState =phoenix_CC2016_service::RemoteControlState::REMOTE_CONTROL_STATUS_AUTONOMOUS;
             }else if(data.remote_control == REMOTE_CONTROL_STATUS_MANUAL){
-                rcState =phoenix_CC2016_service::RemoteControlState::ACTIVE;
+                rcState =phoenix_CC2016_service::RemoteControlState::REMOTE_CONTROL_STATUS_MANUAL;
             }else{
                 logger.error("parseHeartBeat")<<"invalid rc-state: "<<data.remote_control;
             }
@@ -188,6 +189,8 @@ void MavlinkToData::parseHeartBeat(const mavlink_message_t &msg){
 
             //TODO get values
             service->update(rcState,driveMode,data.battery_voltage);
+        }else{
+            logger.error("Phoenix service not valid!");
         }
     }
 }
