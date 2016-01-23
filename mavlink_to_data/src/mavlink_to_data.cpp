@@ -41,6 +41,8 @@ bool MavlinkToData::cycle() {
     parseIncomingMessages();
     accumulateMessages();
 
+    logger.info("cycle")<<"parse errors: "<<mavlink_get_channel_status(0)->parse_error<<" packet drop: "<<mavlink_get_channel_status(0)->packet_rx_drop_count;
+
     return true;
 }
 
@@ -147,6 +149,7 @@ void MavlinkToData::parseProximity(const mavlink_message_t &msg){
 void MavlinkToData::parseHeartBeat(const mavlink_message_t &msg){
     mavlink_heartbeat_t data;
     mavlink_msg_heartbeat_decode(&msg,&data);
+    //mavlink_get_channel_status
     // Sync timestamps
     {
         auto service = getService<timestamp_interpolator_service::TimestampInterpolatorService>("TIMESTAMP_INTERPOLATOR");
@@ -195,8 +198,7 @@ void MavlinkToData::parseHeartBeat(const mavlink_message_t &msg){
     }
 }
 
-void MavlinkToData::accumulateIMU(uint8_t sensorId, MavlinkToData::SensorAccumulator &samples)
-{
+void MavlinkToData::accumulateIMU(uint8_t sensorId, MavlinkToData::SensorAccumulator &samples){
     std::shared_ptr<sensor_utils::IMU> imu = std::make_shared<sensor_utils::IMU>();
 
     imu->sensorId(sensorId);
