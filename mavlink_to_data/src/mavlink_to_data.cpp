@@ -9,6 +9,7 @@
 bool MavlinkToData::initialize() {
     inChannel = readChannel<Mavlink::Data>("MAVLINK_IN");
     sensors = writeChannel<sensor_utils::SensorContainer>("SENSORS");
+    debugRcCarState = writeChannel<sensor_utils::Car::State>("RC_CAR_STATE");
 
     // Configure sensor timebase
     auto tb = config().get<std::string>("sensor_timebase", "mavlink");
@@ -47,10 +48,11 @@ bool MavlinkToData::cycle() {
 }
 
 void MavlinkToData::parseIncomingMessages(){
-
+    bool heartBeated = false;
     for( const auto& msg : *inChannel ){
         if(msg.msgid == MAVLINK_MSG_ID_HEARTBEAT){
             parseHeartBeat(msg);
+            heartBeated = true;
         }else if(msg.msgid == MAVLINK_MSG_ID_IMU){
             parseIMU(msg);
         }else if(msg.msgid == MAVLINK_MSG_ID_ODOMETER_DELTA){
@@ -58,6 +60,9 @@ void MavlinkToData::parseIncomingMessages(){
         }else if(msg.msgid == MAVLINK_MSG_ID_PROXIMITY){
             parseProximity(msg);
         }
+    }
+    if(!heartBeated){
+        logger.error("parseIncomingMessages")<<"heart didn't beat";
     }
 }
 
@@ -153,8 +158,10 @@ void MavlinkToData::parseHeartBeat(const mavlink_message_t &msg){
     // Sync timestamps
     {
         auto service = getService<timestamp_interpolator_service::TimestampInterpolatorService>("TIMESTAMP_INTERPOLATOR");
-        if(service.isValid())
-        {
+        if(service.isValid()){
+            debugRcCarState->steering_front = data.rc_steering_front;
+            debugRcCarState->steering_rear = data.rc_steering_rear;
+            debugRcCarState->targetSpeed = data.rc_velocity;
             // TODO: handle overflows? (-> interpolator service?)
             auto mavlinkTimestamp = lms::Time::fromMicros(data.timestamp);
             service->sync("SYSTEM", "MAVLINK", lms::Time::now(), mavlinkTimestamp);

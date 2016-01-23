@@ -51,6 +51,7 @@ protected:
     //Datachannels filled with inChannel-data
     lms::WriteDataChannel<sensor_utils::Car> car;
     lms::WriteDataChannel<sensor_utils::SensorContainer> sensors;
+    lms::WriteDataChannel<sensor_utils::Car::State> debugRcCarState;
 
     SensorAccumulatorContainer accumulator;
 
