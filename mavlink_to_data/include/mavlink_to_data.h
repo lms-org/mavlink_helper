@@ -58,6 +58,7 @@ protected:
     //! internal sensor timestamp for fixed-timestep base
     Timebase timebase;
     lms::Time timestamp;
+    int heartBeatsMissed;
 };
 
 #endif // MAVLINK_TO_DATA_H

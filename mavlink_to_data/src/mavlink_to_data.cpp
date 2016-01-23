@@ -10,6 +10,7 @@ bool MavlinkToData::initialize() {
     inChannel = readChannel<Mavlink::Data>("MAVLINK_IN");
     sensors = writeChannel<sensor_utils::SensorContainer>("SENSORS");
     debugRcCarState = writeChannel<sensor_utils::Car::State>("RC_CAR_STATE");
+    heartBeatsMissed = 0;
 
     // Configure sensor timebase
     auto tb = config().get<std::string>("sensor_timebase", "mavlink");
@@ -41,18 +42,15 @@ bool MavlinkToData::cycle() {
     computeCurrentTimestamp();
     parseIncomingMessages();
     accumulateMessages();
-
-    logger.info("cycle")<<"parse errors: "<<mavlink_get_channel_status(0)->parse_error<<" packet drop: "<<mavlink_get_channel_status(0)->packet_rx_drop_count;
-
     return true;
 }
 
 void MavlinkToData::parseIncomingMessages(){
-    bool heartBeated = false;
+    int heartBeatMsgs = 0;
     for( const auto& msg : *inChannel ){
         if(msg.msgid == MAVLINK_MSG_ID_HEARTBEAT){
             parseHeartBeat(msg);
-            heartBeated = true;
+            heartBeatMsgs++;
         }else if(msg.msgid == MAVLINK_MSG_ID_IMU){
             parseIMU(msg);
         }else if(msg.msgid == MAVLINK_MSG_ID_ODOMETER_DELTA){
@@ -61,8 +59,14 @@ void MavlinkToData::parseIncomingMessages(){
             parseProximity(msg);
         }
     }
-    if(!heartBeated){
-        logger.error("parseIncomingMessages")<<"heart didn't beat";
+    if(heartBeatMsgs == 0){
+        heartBeatsMissed--;
+        logger.error("parseIncomingMessages")<<"heart didn't beat"<<heartBeatsMissed;
+    }else{
+        heartBeatsMissed = 0;
+        if(heartBeatMsgs > 1){
+            logger.warn("Got more than one heartbeat")<<heartBeatMsgs;
+        }
     }
 }
 
