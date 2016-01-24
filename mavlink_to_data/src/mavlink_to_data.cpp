@@ -148,7 +148,7 @@ void MavlinkToData::parseProximity(const mavlink_message_t &msg){
     sensor->timestamp(timestamp);
 
     sensor->distance = data.distance;
-    sensor->direction = config().get<float>(sensor_string+"_direction",0);
+    sensor->direction = config().get<float>(sensor_string+"_dir",0)*M_PI/180;
     sensor->localPosition.x = config().get<float>(sensor_string+"_x",0);
     sensor->localPosition.y = config().get<float>(sensor_string+"_y",0);
     sensors->put(sensor);
