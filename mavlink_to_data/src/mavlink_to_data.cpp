@@ -61,11 +61,11 @@ void MavlinkToData::parseIncomingMessages(){
     }
     if(heartBeatMsgs == 0){
         heartBeatsMissed--;
-        logger.error("parseIncomingMessages")<<"heart didn't beat"<<heartBeatsMissed;
+        logger.info("parseIncomingMessages")<<"heart didn't beat"<<heartBeatsMissed;
     }else{
         heartBeatsMissed = 0;
         if(heartBeatMsgs > 1){
-            logger.warn("Got more than one heartbeat")<<heartBeatMsgs;
+            logger.info("Got more than one heartbeat")<<heartBeatMsgs;
         }
     }
 }
