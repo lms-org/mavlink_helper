@@ -5,12 +5,11 @@
 
 #include <mavlink/CC2016/mavlink.h>
 #include <mavlink/lms/data.h>
-#include "sensor_utils/distance_sensor.h"
-#include "sensor_utils/imu.h"
 #include <sensor_utils/car.h>
 #include <sensor_utils/sensor.h>
-#include <sensor_utils/odometer.h>
-#include "sensor_utils/distance_sensor.h"
+
+#include "sensors.h"
+
 /**
  * @brief LMS module mavlink_to_data
  **/
@@ -26,12 +25,16 @@ public:
     bool initialize() override;
     bool deinitialize() override;
     bool cycle() override;
+    void configsChanged() override;
 
 protected:
     // Sensor data accumulation
     typedef std::pair<uint8_t, uint8_t> SensorKey; // Message Identifier + Component ID
     typedef std::vector< std::shared_ptr<sensor_utils::Sensor> > SensorAccumulator; // Number of samples + accumulated data
     typedef std::map<SensorKey, SensorAccumulator> SensorAccumulatorContainer;
+
+    template<typename T>
+    using SensorConfig = std::map<size_t, T>;
 
 protected:
     void parseIncomingMessages();
@@ -40,11 +43,17 @@ protected:
     void parseOdometer(const mavlink_message_t &msg);
     void parseProximity(const mavlink_message_t &msg);
 
+    // Configs
+    const IMUConfig& getIMUConfig(size_t id, bool forceReload = false);
+    const OdometerConfig& getOdometerConfig(size_t id, bool forceReload = false);
+    const ProximityConfig& getProximityConfig(size_t id, bool forceReload = false);
+
     void accumulateMessages();
     void accumulateIMU(uint8_t sensorId, SensorAccumulator& samples);
     void accumulateOdometer(uint8_t sensorId, SensorAccumulator& samples);
 
     void computeCurrentTimestamp();
+
 
     // Datachannels
     lms::ReadDataChannel<Mavlink::Data> inChannel;
@@ -59,6 +68,11 @@ protected:
     Timebase timebase;
     lms::Time timestamp;
     int heartBeatsMissed;
+
+    // Sensor configs
+    SensorConfig<IMUConfig> imuConfigs;
+    SensorConfig<OdometerConfig> odometerConfigs;
+    SensorConfig<ProximityConfig> proximityConfigs;
 };
 
 #endif // MAVLINK_TO_DATA_H

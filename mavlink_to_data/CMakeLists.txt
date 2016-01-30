@@ -5,6 +5,7 @@ set(SOURCES
 
 set(HEADERS
     "include/mavlink_to_data.h"
+    "include/sensors.h"
 )
 
 include_directories(include)
