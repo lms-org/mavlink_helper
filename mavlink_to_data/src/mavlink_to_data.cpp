@@ -160,7 +160,7 @@ void MavlinkToData::parseHeartBeat(const mavlink_message_t &msg){
             debugRcCarState->steering_front = data.rc_steering_front;
             debugRcCarState->steering_rear = data.rc_steering_rear;
             debugRcCarState->targetSpeed = data.rc_velocity;
-            // TODO: handle overflows? (-> interpolator service?)
+
             auto mavlinkTimestamp = lms::Time::fromMicros(data.timestamp);
             service->sync("SYSTEM", "MAVLINK", lms::Time::now(), mavlinkTimestamp);
             service->sync("MAVLINK", "SENSOR", mavlinkTimestamp, timestamp);
@@ -325,6 +325,9 @@ void MavlinkToData::computeCurrentTimestamp()
         auto service = getService<timestamp_interpolator_service::TimestampInterpolatorService>("TIMESTAMP_INTERPOLATOR");
         if(service.isValid())
         {
+            // Make sensor timestamp canonical (overflow compensated)
+            timestamp = service->canonical("SENSOR", timestamp);
+
             // Sync system timebase to sensor timebase
             service->sync("SYSTEM", "SENSOR", lms::Time::now(), timestamp);
         }
