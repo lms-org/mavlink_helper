@@ -464,9 +464,9 @@ const ProximityConfig& MavlinkToData::getProximityConfig(size_t id, bool forceRe
         // Name
         cfg.name = config().get<std::string>(sensor, "DISTANCE_" + std::to_string(id));
 
-        cfg.direction = config().get<float>(sensor+"_dir",0)*M_PI/180;
-        cfg.x = config().get<float>(sensor+"_x",0);
-        cfg.y = config().get<float>(sensor+"_y",0);
+        cfg.direction = config().get<float>(cfg.name+"_dir",0)*M_PI/180;
+        cfg.x = config().get<float>(cfg.name+"_x",0);
+        cfg.y = config().get<float>(cfg.name+"_y",0);
 
         // Set config
         proximityConfigs[id] = cfg;
