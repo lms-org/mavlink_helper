@@ -67,6 +67,7 @@ protected:
     //! internal sensor timestamp for fixed-timestep base
     Timebase timebase;
     lms::Time timestamp;
+    lms::Time rawTimestamp;
     int heartBeatsMissed;
 
     // Sensor configs

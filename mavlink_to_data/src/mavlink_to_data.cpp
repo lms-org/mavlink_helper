@@ -161,9 +161,9 @@ void MavlinkToData::parseHeartBeat(const mavlink_message_t &msg){
             debugRcCarState->steering_rear = data.rc_steering_rear;
             debugRcCarState->targetSpeed = data.rc_velocity;
 
-            auto mavlinkTimestamp = lms::Time::fromMicros(data.timestamp);
-            service->sync("SYSTEM", "MAVLINK", lms::Time::now(), mavlinkTimestamp);
-            service->sync("MAVLINK", "SENSOR", mavlinkTimestamp, timestamp);
+            auto mavlinkTimestamp = service->canonical("MAVLINK", lms::Time::fromMicros(data.timestamp));
+            service->sync("SYSTEM", "MAVLINK", lms::Time::now(), mavlinkTimestamp, false);
+            service->sync("MAVLINK", "SENSOR", mavlinkTimestamp, timestamp, false);
         }
     }
 
@@ -289,12 +289,12 @@ void MavlinkToData::computeCurrentTimestamp()
             {
                 const auto tickrate = config().get<float>("sensor_timebase_tickrate", 100);
                 const auto usPerTick = static_cast<lms::Time::TimeType>( (1.f / tickrate) * 1e6 );
-                timestamp += lms::Time::fromMicros(usPerTick);
+                rawTimestamp += lms::Time::fromMicros(usPerTick);
             }
             break;
         case Timebase::SYSTEM:
             // LMS system time
-            timestamp = lms::Time::now();
+            rawTimestamp = lms::Time::now();
             break;
         case Timebase::MAVLINK:
             // Mavlink timebase
@@ -303,16 +303,16 @@ void MavlinkToData::computeCurrentTimestamp()
                 for( const auto& msg : *inChannel )
                 {
                     if(msg.msgid == MAVLINK_MSG_ID_HEARTBEAT){
-                        timestamp = lms::Time::fromMicros(mavlink_msg_heartbeat_get_timestamp(&msg));
+                        rawTimestamp = lms::Time::fromMicros(mavlink_msg_heartbeat_get_timestamp(&msg));
                         break;
                     } else if(msg.msgid == MAVLINK_MSG_ID_IMU){
-                        timestamp = lms::Time::fromMicros(mavlink_msg_imu_get_timestamp(&msg));
+                        rawTimestamp = lms::Time::fromMicros(mavlink_msg_imu_get_timestamp(&msg));
                         break;
                     } else if(msg.msgid == MAVLINK_MSG_ID_ODOMETER_DELTA){
-                        timestamp = lms::Time::fromMicros(mavlink_msg_odometer_delta_get_timestamp(&msg));
+                        rawTimestamp = lms::Time::fromMicros(mavlink_msg_odometer_delta_get_timestamp(&msg));
                         break;
                     } else if(msg.msgid == MAVLINK_MSG_ID_PROXIMITY){
-                        timestamp = lms::Time::fromMicros(mavlink_msg_proximity_get_timestamp(&msg));
+                        rawTimestamp = lms::Time::fromMicros(mavlink_msg_proximity_get_timestamp(&msg));
                         break;
                     }
                 }
@@ -326,10 +326,11 @@ void MavlinkToData::computeCurrentTimestamp()
         if(service.isValid())
         {
             // Make sensor timestamp canonical (overflow compensated)
-            timestamp = service->canonical("SENSOR", timestamp);
+            timestamp = service->canonical("SENSOR", rawTimestamp);
+
 
             // Sync system timebase to sensor timebase
-            service->sync("SYSTEM", "SENSOR", lms::Time::now(), timestamp);
+            service->sync("SYSTEM", "SENSOR", lms::Time::now(), timestamp, false);
         }
     }
 }
