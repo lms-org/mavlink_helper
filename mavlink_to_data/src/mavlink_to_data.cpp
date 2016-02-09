@@ -130,6 +130,7 @@ void MavlinkToData::parseOdometer(const mavlink_message_t &msg){
 }
 
 void MavlinkToData::parseProximity(const mavlink_message_t &msg){
+    //TODO hier mitteln
     //get the data
     int sensor_id = msg.compid;
     mavlink_proximity_t data;

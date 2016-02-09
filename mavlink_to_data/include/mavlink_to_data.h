@@ -20,7 +20,6 @@ protected:
         SYSTEM,
         MAVLINK
     };
-
 public:
     bool initialize() override;
     bool deinitialize() override;
