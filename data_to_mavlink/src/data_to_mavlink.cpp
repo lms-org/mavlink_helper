@@ -27,6 +27,6 @@ void CarToMavlink::setControlCommands(){
     mavlink_message_t msg;
     // TODO: turn signal indicators
     logger.debug("setControlCommands")<<car->getPrioState().name << ": "<<car->targetSpeed();
-    mavlink_msg_control_command_pack(0, 0, &msg, car->targetSpeed(), car->steeringFront(), car->steeringRear(), 0, 0);
+    mavlink_msg_control_command_pack(0, 0, &msg, car->targetSpeed(), car->steeringFront(), car->steeringRear(), car->getPrioState().indicatorLeft, car->getPrioState().indicatorRight);
     outChannel->add(msg);
 }
