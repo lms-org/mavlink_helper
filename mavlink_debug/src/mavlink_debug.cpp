@@ -6,8 +6,7 @@ static mavlink_message_info_t msgInfos[256] = MAVLINK_MESSAGE_INFO;
 
 bool umavlinkudebug::initialize() {
     // Setup datachannels
-    auto channel = config().get<std::string>("channel");
-    mavlinkChannel = readChannel<Mavlink::Data>(channel);
+    mavlinkChannel = readChannel<Mavlink::Data>("CHANNEL");
     
     // Reset timestamp
     lastTimestamp = lms::Time::now();
