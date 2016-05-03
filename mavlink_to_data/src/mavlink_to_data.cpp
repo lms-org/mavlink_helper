@@ -10,7 +10,7 @@
 bool MavlinkToData::initialize() {
     inChannel = readChannel<Mavlink::Data>("MAVLINK_IN");
     sensors = writeChannel<sensor_utils::SensorContainer>("SENSORS");
-    debugRcCarState = writeChannel<sensor_utils::Car::State>("RC_CAR_STATE");
+    debugRcCarState = writeChannel<street_environment::Car::State>("RC_CAR_STATE");
     heartBeatsMissed = 0;
 
     // Configure sensor timebase

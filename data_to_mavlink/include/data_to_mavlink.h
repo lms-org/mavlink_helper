@@ -26,7 +26,7 @@ protected:
 protected:
     // Datachannels
     lms::WriteDataChannel<Mavlink::Data> outChannel;
-    lms::ReadDataChannel<sensor_utils::Car> car;
+    lms::ReadDataChannel<street_environment::Car> car;
 
     
     // RC state
