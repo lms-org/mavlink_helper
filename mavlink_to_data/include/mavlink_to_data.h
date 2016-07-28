@@ -5,7 +5,7 @@
 
 #include <mavlink/CC2016/mavlink.h>
 #include <mavlink/lms/data.h>
-#include <sensor_utils/car.h>
+#include <street_environment/car.h>
 #include <sensor_utils/sensor.h>
 
 #include "sensors.h"

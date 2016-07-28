@@ -9,4 +9,4 @@ set(HEADERS
 
 include_directories(include)
 add_library(data_to_mavlink MODULE ${SOURCES} ${HEADERS})
-target_link_libraries(data_to_mavlink PRIVATE lmscore sensor_utils)
+target_link_libraries(data_to_mavlink PRIVATE lmscore street_environment)

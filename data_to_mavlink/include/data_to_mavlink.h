@@ -3,17 +3,9 @@
 
 #include <lms/module.h>
 
-#include <sensor_utils/car.h>
-#include <sensor_utils/sensor.h>
-#include "sensor_utils/distance_sensor.h"
-
-#include <vector>
-
+#include <street_environment/car.h>
 #include <mavlink/CC2016/mavlink.h>
 #include <mavlink/lms/data.h>
-#include "sensor_utils/distance_sensor.h"
-#include "sensor_utils/imu.h"
-
 class CarToMavlink : public lms::Module {
 public:
     bool initialize();
