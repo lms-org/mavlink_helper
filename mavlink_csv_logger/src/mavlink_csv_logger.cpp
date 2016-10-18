@@ -1,6 +1,6 @@
 #include "mavlink_csv_logger.h"
 
-#include <lms/extra/time.h>
+#include <lms/time.h>
 
 static mavlink_message_info_t msgInfos[256] = MAVLINK_MESSAGE_INFO;
 
