@@ -6,7 +6,7 @@ bool MavlinkConfig::initialize() {
     outChannel = writeChannel<Mavlink::Data>("MAVLINK_OUT");
 
     // Read system id
-    systemID = config().get<size_t>("system_id");
+    systemID = config().get<int>("system_id");
 
     return true;
 }
