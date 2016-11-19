@@ -39,13 +39,16 @@ protected:
     void parseIncomingMessages();
     void parseHeartBeat(const mavlink_message_t &msg);
     void parseIMU(const mavlink_message_t &msg);
+    void parseOdometerDelta(const mavlink_message_t &msg);
     void parseOdometer(const mavlink_message_t &msg);
     void parseProximity(const mavlink_message_t &msg);
+    void parseParking(const mavlink_message_t &msg);
 
     // Configs
     const IMUConfig& getIMUConfig(size_t id, bool forceReload = false);
     const OdometerConfig& getOdometerConfig(size_t id, bool forceReload = false);
     const ProximityConfig& getProximityConfig(size_t id, bool forceReload = false);
+    const ParkingLotConfig& getParkingLotConfig(size_t id, bool forceReload = false);
 
     void accumulateMessages();
     void accumulateIMU(uint8_t sensorId, SensorAccumulator& samples);
@@ -73,6 +76,7 @@ protected:
     SensorConfig<IMUConfig> imuConfigs;
     SensorConfig<OdometerConfig> odometerConfigs;
     SensorConfig<ProximityConfig> proximityConfigs;
+    SensorConfig<ParkingLotConfig> parkingLotConfigs;
 };
 
 #endif // MAVLINK_TO_DATA_H
