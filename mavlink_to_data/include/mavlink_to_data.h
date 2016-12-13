@@ -57,9 +57,9 @@ protected:
     // Datachannels
     lms::ReadDataChannel<Mavlink::Data> inChannel;
     //Datachannels filled with inChannel-data
-    lms::WriteDataChannel<street_environment::Car> car;
+    lms::WriteDataChannel<street_environment::CarCommand> car;
     lms::WriteDataChannel<sensor_utils::SensorContainer> sensors;
-    lms::WriteDataChannel<street_environment::Car::State> debugRcCarState;
+    lms::WriteDataChannel<street_environment::CarCommand::State> debugRcCarState;
 
     SensorAccumulatorContainer accumulator;
 

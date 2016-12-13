@@ -4,7 +4,7 @@
 bool CarToMavlink::initialize() {
     
     // Datachannels
-    car = readChannel<street_environment::Car>("CAR");
+    car = readChannel<street_environment::CarCommand>("CAR");
     outChannel = writeChannel<Mavlink::Data>("MAVLINK_OUT");
 
     lastRcState = false;
