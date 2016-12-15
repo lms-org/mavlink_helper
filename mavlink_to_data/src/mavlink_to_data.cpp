@@ -357,9 +357,10 @@ void MavlinkToData::computeCurrentTimestamp()
                     } else if(msg.msgid == MAVLINK_MSG_ID_PROXIMITY){
                         rawTimestamp = lms::Time::fromMicros(mavlink_msg_proximity_get_timestamp(&msg));
                         break;
-                    }else if(msg.msgid == MAVLINK_MSG_ID_PARKING_LOT)
+                    }else if(msg.msgid == MAVLINK_MSG_ID_PARKING_LOT){
                         rawTimestamp = lms::Time::fromMicros(mavlink_msg_parking_lot_get_timestamp(&msg));
                         break;
+                    }
                 }
             }
             break;
