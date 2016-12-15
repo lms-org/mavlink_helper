@@ -2,6 +2,7 @@
 #include "sensor_utils/distance_sensor.h"
 #include "sensor_utils/imu.h"
 #include "sensor_utils/odometer.h"
+#include "sensor_utils/parking_sensor.h"
 
 #include <phoenix_CC2016_service/phoenix_CC2016_service.h>
 #include <timestamp_interpolator_service/timestamp_interpolator_service.h>
@@ -54,10 +55,14 @@ void MavlinkToData::parseIncomingMessages(){
             heartBeatMsgs++;
         }else if(msg.msgid == MAVLINK_MSG_ID_IMU){
             parseIMU(msg);
-        }else if(msg.msgid == MAVLINK_MSG_ID_ODOMETER_DELTA){
+        }else if(msg.msgid == MAVLINK_MSG_ID_ODOMETER){
             parseOdometer(msg);
+        }else if(msg.msgid == MAVLINK_MSG_ID_ODOMETER_DELTA){
+            parseOdometerDelta(msg);
         }else if(msg.msgid == MAVLINK_MSG_ID_PROXIMITY){
             parseProximity(msg);
+        }else if(msg.msgid == MAVLINK_MSG_ID_PARKING_LOT){
+            parseParking(msg);
         }
     }
     if(heartBeatMsgs == 0){
@@ -80,7 +85,7 @@ void MavlinkToData::accumulateMessages()
             case MAVLINK_MSG_ID_IMU:
                 accumulateIMU(data.first.second, data.second);
                 break;
-            case MAVLINK_MSG_ID_ODOMETER_DELTA:
+            case MAVLINK_MSG_ID_ODOMETER_DELTA | MAVLINK_MSG_ID_ODOMETER:
                 accumulateOdometer(data.first.second, data.second);
                 break;
         }
@@ -111,6 +116,26 @@ void MavlinkToData::parseIMU(const mavlink_message_t &msg){
 }
 
 void MavlinkToData::parseOdometer(const mavlink_message_t &msg){
+    mavlink_odometer_t data;
+    mavlink_msg_odometer_decode(&msg,&data);
+
+    std::shared_ptr<sensor_utils::Odometer> odometer = std::make_shared<sensor_utils::Odometer>();
+
+    odometer->sensorId(msg.compid);
+    const auto& cfg = getOdometerConfig(odometer->sensorId(), false);
+    odometer->name(cfg.name);
+    odometer->timestamp(timestamp);
+
+    odometer->distance = sensor_utils::Odometer::Measurement( data.xdist_delta, data.ydist_delta, data.zdist_delta );
+    odometer->absDistance = sensor_utils::Odometer::Measurement( data.xdist_abs, data.ydist_abs, data.zdist_abs );
+    odometer->velocity = sensor_utils::Odometer::Measurement( data.xvelocity, data.yvelocity, data.zvelocity );
+
+    // Save message in accumulator
+    auto accumulatorKey = std::make_pair( static_cast<uint8_t>(MAVLINK_MSG_ID_ODOMETER_DELTA), static_cast<uint8_t>(odometer->sensorId()) );
+    accumulator[accumulatorKey].push_back(odometer);
+}
+
+void MavlinkToData::parseOdometerDelta(const mavlink_message_t &msg){
     mavlink_odometer_delta_t data;
     mavlink_msg_odometer_delta_decode(&msg,&data);
 
@@ -146,6 +171,23 @@ void MavlinkToData::parseProximity(const mavlink_message_t &msg){
     sensor->direction =  cfg.direction;
     sensor->localPosition.x = cfg.x;
     sensor->localPosition.y = cfg.y;
+    sensors->put(sensor);
+}
+
+void MavlinkToData::parseParking(const mavlink_message_t &msg){
+
+    int sensor_id = msg.compid;
+    mavlink_parking_lot_t data;
+    mavlink_msg_parking_lot_decode(&msg, &data);
+
+    std::shared_ptr<sensor_utils::ParkingSensor> sensor = std::make_shared<sensor_utils::ParkingSensor>();
+    sensor->timestamp(timestamp);
+    sensor->sensorId(sensor_id);
+    const auto& cfg = getParkingLotConfig(sensor->sensorId(), false);
+    sensor->name(cfg.name);
+
+    sensor->position = data.parking_lot_position;
+    sensor->size = data.parking_lot_size;
     sensors->put(sensor);
 }
 
@@ -272,11 +314,11 @@ void MavlinkToData::accumulateOdometer(uint8_t sensorId, MavlinkToData::SensorAc
     {
         odometer->velocity /= samples.size();
 
-        // TODO: covariances, quality
+        // TODO: covariances, quality, absolute distance
 
         sensors->put(odometer);
     }
-    
+
     // Clear accumulated messages
     samples.clear();
 }
@@ -315,7 +357,9 @@ void MavlinkToData::computeCurrentTimestamp()
                     } else if(msg.msgid == MAVLINK_MSG_ID_PROXIMITY){
                         rawTimestamp = lms::Time::fromMicros(mavlink_msg_proximity_get_timestamp(&msg));
                         break;
-                    }
+                    }else if(msg.msgid == MAVLINK_MSG_ID_PARKING_LOT)
+                        rawTimestamp = lms::Time::fromMicros(mavlink_msg_parking_lot_get_timestamp(&msg));
+                        break;
                 }
             }
             break;
@@ -474,4 +518,21 @@ const ProximityConfig& MavlinkToData::getProximityConfig(size_t id, bool forceRe
         proximityConfigs[id] = cfg;
     }
     return proximityConfigs[id];
+}
+
+const ParkingLotConfig& MavlinkToData::getParkingLotConfig(size_t id, bool forceReload)
+{
+    if(forceReload || parkingLotConfigs.find(id) == parkingLotConfigs.end()) {
+        // Config not found or not up-to-date
+
+        ParkingLotConfig cfg;
+        std::string sensor = "parkingLot_" + std::to_string(id);
+
+        // Name
+        cfg.name = config().get<std::string>(sensor, "PARKINGLOT_" + std::to_string(id));
+
+        // Set config
+        parkingLotConfigs[id] = cfg;
+    }
+    return parkingLotConfigs[id];
 }

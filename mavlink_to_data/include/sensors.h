@@ -30,4 +30,9 @@ struct ProximityConfig {
 
 };
 
+
+struct ParkingLotConfig {
+    std::string name;
+};
+
 #endif
