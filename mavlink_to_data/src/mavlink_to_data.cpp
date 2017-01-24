@@ -230,6 +230,7 @@ void MavlinkToData::parseHeartBeat(const mavlink_message_t &msg){
             }
 
             phoenix_CC2016_service::CCDriveMode driveMode = phoenix_CC2016_service::CCDriveMode::IDLE;
+            logger.debug("drivemode")<<(int)driveMode;
             if(data.drive_mode == DRIVE_MODE_TRACK){
                 driveMode = phoenix_CC2016_service::CCDriveMode::FOH;
             }else if(data.drive_mode == DRIVE_MODE_TRACK_OBSTACLES){
