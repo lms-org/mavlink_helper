@@ -241,6 +241,7 @@ void MavlinkToData::parseHeartBeat(const mavlink_message_t &msg){
 
             //TODO get values
             service->update(rcState,driveMode,data.battery_voltage);
+            logger.debug("car drivemode")<<(int)service->driveMode();
         }else{
             logger.error("Phoenix service not valid!");
         }
