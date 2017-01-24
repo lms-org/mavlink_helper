@@ -236,14 +236,13 @@ void MavlinkToData::parseHeartBeat(const mavlink_message_t &msg){
             }else if(data.drive_mode == DRIVE_MODE_TRACK_OBSTACLES){
                 driveMode = phoenix_CC2016_service::CCDriveMode::FMH;
             }else if(data.drive_mode == DRIVE_MODE_PARKING){
-                driveMode = phoenix_CC2016_service::CCDriveMode::PARKING;
+                driveMode = phoenix_CC2016_service::CCDriveMode::FMH; //TODO
             }else{
                 logger.error("drivemode")<<"no valid drivemode given! "<<data.drive_mode;
             }
 
             //TODO get values
             service->update(rcState,driveMode,data.battery_voltage);
-            logger.debug("drivemode")<<(int)service->driveMode();
         }else{
             logger.error("Phoenix service not valid!");
         }
