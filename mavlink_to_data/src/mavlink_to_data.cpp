@@ -171,6 +171,7 @@ void MavlinkToData::parseProximity(const mavlink_message_t &msg){
     sensor->direction =  cfg.direction;
     sensor->localPosition.x = cfg.x;
     sensor->localPosition.y = cfg.y;
+    logger.debug("adding sensor")<<sensor->name();
     sensors->put(sensor);
 }
 
@@ -188,6 +189,7 @@ void MavlinkToData::parseParking(const mavlink_message_t &msg){
 
     sensor->position = data.parking_lot_position;
     sensor->size = data.parking_lot_size;
+    logger.debug("adding sensor")<<sensor->name();
     sensors->put(sensor);
 }
 
@@ -282,6 +284,7 @@ void MavlinkToData::accumulateIMU(uint8_t sensorId, MavlinkToData::SensorAccumul
         imu->gyroscopeCovariance = cfg.gyroscopeCovariance;
         imu->magnetometerCovariance = cfg.magnetometerCovariance;
 
+        logger.debug("adding sensor")<<imu->name();
         sensors->put(imu);
     }
 
@@ -318,7 +321,7 @@ void MavlinkToData::accumulateOdometer(uint8_t sensorId, MavlinkToData::SensorAc
         odometer->velocity /= samples.size();
 
         // TODO: covariances, quality, absolute distance
-
+        logger.debug("adding sensor")<<odometer->name();
         sensors->put(odometer);
     }
 
