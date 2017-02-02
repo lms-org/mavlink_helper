@@ -81,16 +81,17 @@ void MavlinkToData::parseIncomingMessages(){
 
 void MavlinkToData::accumulateMessages()
 {
-    for( auto& data : accumulator )
-    {
-        switch( data.first.first )
-        {
+    for( auto& data : accumulator ){
+        switch( data.first.first ){
             case MAVLINK_MSG_ID_IMU:
                 accumulateIMU(data.first.second, data.second);
                 break;
-            case MAVLINK_MSG_ID_ODOMETER_DELTA | MAVLINK_MSG_ID_ODOMETER:
+            case MAVLINK_MSG_ID_ODOMETER_DELTA:
+            case MAVLINK_MSG_ID_ODOMETER:
                 accumulateOdometer(data.first.second, data.second);
                 break;
+        default:
+            logger.error("invalid type given")<<(int)data.first.first;
         }
     }
 }
