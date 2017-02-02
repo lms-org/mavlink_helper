@@ -50,7 +50,7 @@ bool MavlinkToData::cycle() {
 void MavlinkToData::parseIncomingMessages(){
     int heartBeatMsgs = 0;
     for( const auto& msg : *inChannel ){
-        logger.debug("received channel sensor")<<msg.msgid;
+        logger.debug("received channel sensor")<<(int)msg.msgid;
         if(msg.msgid == MAVLINK_MSG_ID_HEARTBEAT){
             parseHeartBeat(msg);
             heartBeatMsgs++;
