@@ -14,6 +14,7 @@ public:
     
 protected:
     void setControlCommands();
+    void setDriveMode();
     
 protected:
     // Datachannels
