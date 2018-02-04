@@ -34,26 +34,30 @@ void CarToMavlink::setControlCommands(){
 
 
 void CarToMavlink::setDriveMode(){
-    if(street_environment::CarCommand::StateType::PARKING_FINISHED == car->getPrioState().state ||
-        street_environment::CarCommand::StateType::PARKING_START == car->getPrioState().state )
+
+    phoenix_CC2016_service::CCDriveMode mode = getService<phoenix_CC2016_service::Phoenix_CC2016Service>("PHOENIX_SERVICE")->driveMode();
+
+    if(phoenix_CC2016_service::CCDriveMode::PARKING_START ==  mode ||
+       phoenix_CC2016_service::CCDriveMode::PARKING_END == mode)
     {
         mavlink_message_t msg;
         // todo: put this in config file
         const uint8_t drive_mode_config_set = 1;
         const uint8_t drive_mode_param_id = 3;
-        int32_t mode;
 
-        switch(car->getPrioState().state)
+        int32_t out_mode;
+
+        switch(mode)
         {
-        case street_environment::CarCommand::StateType::PARKING_FINISHED:
-            mode = DRIVE_MODE::DRIVE_MODE_TRACK; // switch back to FOH
+        case phoenix_CC2016_service::CCDriveMode::PARKING_END:
+            out_mode = DRIVE_MODE::DRIVE_MODE_TRACK; // switch back to FOH
             break;
-        case street_environment::CarCommand::StateType::PARKING_START:
-            mode = DRIVE_MODE::DRIVE_MODE_PARKING; // start parking
+        case phoenix_CC2016_service::CCDriveMode::PARKING_START:
+            out_mode = DRIVE_MODE::DRIVE_MODE_PARKING; // start parking
             break;
         }
 
-        mavlink_msg_config_param_set_int_pack(0, 0, &msg, drive_mode_config_set, drive_mode_param_id, mode);
+        mavlink_msg_config_param_set_int_pack(0, 0, &msg, drive_mode_config_set, drive_mode_param_id, out_mode);
         outChannel->add(msg);
 
     }
